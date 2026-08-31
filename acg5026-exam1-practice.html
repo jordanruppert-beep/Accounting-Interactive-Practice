@@ -1,0 +1,2265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACG5026 Practice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #F1E7BE;
+  --paper-line: rgba(84, 111, 158, 0.24);
+  --paper-margin: rgba(154, 43, 59, 0.38);
+  --card: #FEFBF1;
+  --card-border: rgba(27, 35, 64, 0.13);
+  --ink: #1B2340;
+  --ink-soft: #4B5478;
+  --ink-faint: #85899e;
+  --red: #9C2B3B;
+  --red-deep: #711D29;
+  --green: #2C6B4A;
+  --green-bg: #E3EEE5;
+  --red-bg: #F5E4E2;
+  --gold: #AD8A3F;
+  --gold-soft: #D8C48C;
+  --shadow-sm: 0 1px 0 rgba(27,35,64,0.05), 0 2px 6px rgba(27,35,64,0.06);
+  --shadow-md: 0 1px 0 rgba(27,35,64,0.06), 0 14px 34px -10px rgba(27,35,64,0.22);
+  --radius: 5px;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+body {
+  background-image:
+    radial-gradient(rgba(27,35,64,0.05) 0.6px, transparent 0.6px),
+    repeating-linear-gradient(to bottom, transparent 0, transparent 33px, var(--paper-line) 33px, var(--paper-line) 34px);
+  background-size: 5px 5px, 100% 34px;
+  background-position: 0 0, 0 84px;
+  min-height: 100vh;
+}
+h1, h2, h3 { font-family: 'Spectral', Georgia, serif; margin: 0; }
+p { margin: 0; }
+button { font-family: inherit; }
+input, select { font-family: inherit; }
+::selection { background: var(--gold-soft); color: var(--ink); }
+
+.page {
+  position: relative; max-width: 800px; margin: 0 auto;
+  padding: 0 30px 90px 58px;
+  border-left: 2px solid var(--paper-margin);
+  min-height: 100vh;
+}
+@media (max-width: 640px) { .page { padding: 0 14px 60px 22px; border-left-width: 1.5px; } }
+
+.site-header { padding: 40px 0 0; }
+.brand { display: flex; align-items: flex-start; gap: 16px; }
+.brand-mark {
+  flex: none; width: 46px; height: 46px; border-radius: 50%;
+  border: 1.5px solid var(--gold); display: flex; align-items: center; justify-content: center;
+  font-family: 'Spectral', serif; font-size: 21px; font-weight: 600;
+  color: var(--red); background: var(--card); box-shadow: var(--shadow-sm);
+  transform: rotate(-4deg);
+}
+.brand-text h1 { font-size: 27px; font-weight: 600; letter-spacing: -0.012em; }
+.brand-text p { margin-top: 6px; font-size: 14.5px; color: var(--ink-soft); max-width: 44ch; }
+.brand-text p.brand-by {
+  margin-top: 5px; font-family: 'Spectral', serif; font-style: italic;
+  font-size: 13.5px; color: var(--ink-faint);
+}
+.header-rule {
+  height: 1.5px; margin: 24px 0 30px;
+  background: linear-gradient(var(--gold), var(--gold)) bottom / 100% 1.5px no-repeat;
+  opacity: 0.75;
+}
+.screen { padding-top: 2px; }
+.screen[hidden] { display: none; }
+.screen-enter { animation: fadeUp .38s cubic-bezier(.2,.8,.3,1); }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.intro-card {
+  position: relative; background: var(--card); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 22px 24px 22px 26px;
+  box-shadow: var(--shadow-md); margin-bottom: 32px;
+}
+.intro-card::before {
+  content: ""; position: absolute; left: -2px; top: 18px; bottom: 18px;
+  width: 3px; background: var(--red); border-radius: 2px;
+}
+.intro-kicker {
+  font-family: 'Spectral', serif; font-weight: 600; font-style: italic;
+  color: var(--red); font-size: 15px; margin-bottom: 9px;
+}
+.intro-text { font-size: 15.5px; line-height: 1.6; }
+
+.section-label {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--gold); font-weight: 700; margin: 30px 0 12px;
+}
+.section-label:first-of-type { margin-top: 0; }
+
+.mode-list { display: flex; flex-direction: column; gap: 10px; }
+.mode-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 14px; width: 100%; text-align: left;
+  background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
+  padding: 15px 17px; cursor: pointer; box-shadow: var(--shadow-sm);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .12s ease;
+}
+.mode-row:hover:not(:disabled) { border-color: var(--gold); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.mode-row:disabled { cursor: not-allowed; opacity: 0.5; }
+.mode-num {
+  flex: none; width: 27px; height: 27px; border-radius: 50%;
+  border: 1.5px solid var(--ink-soft); display: flex; align-items: center; justify-content: center;
+  font-size: 12.5px; font-weight: 700; color: var(--ink-soft);
+}
+.mode-info { flex: 1; }
+.mode-name { font-family: 'Spectral', serif; font-size: 17px; font-weight: 600; }
+.mode-meta { font-size: 12.5px; color: var(--ink-faint); margin-top: 3px; }
+.mode-tag {
+  flex: none; margin-left: auto; white-space: nowrap; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em;
+  font-weight: 700; color: var(--ink-faint); border: 1px solid var(--card-border);
+  padding: 3px 7px; border-radius: 3px;
+}
+.mode-tag.hard { color: var(--red); border-color: rgba(156,43,59,0.35); }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; flex-wrap: wrap; gap: 8px; }
+.topbar-label { font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.link-btn {
+  background: none; border: none; color: var(--ink-soft); text-decoration: underline;
+  text-decoration-color: var(--gold-soft); text-underline-offset: 3px; cursor: pointer;
+  padding: 2px 0; font-size: 13.5px;
+  transition: color .12s ease, text-decoration-color .12s ease;
+}
+.link-btn:hover { color: var(--red); text-decoration-color: var(--red); }
+.link-btn.subtle { font-size: 14px; text-decoration: none; }
+.link-btn.subtle:hover { text-decoration: underline; text-decoration-color: var(--gold-soft); }
+
+.progress-track { height: 6px; background: rgba(27,35,64,0.08); border-radius: 3px; overflow: hidden; margin-bottom: 28px; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--gold)); width: 0%; transition: width .3s cubic-bezier(.3,.7,.4,1); }
+
+.exam-card {
+  background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
+  padding: 28px 28px 24px; box-shadow: var(--shadow-md);
+}
+.exam-category { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold); font-weight: 700; margin-bottom: 12px; }
+.exam-question { font-size: 19.5px; line-height: 1.48; font-weight: 500; margin-bottom: 22px; }
+.choices { display: flex; flex-direction: column; gap: 10px; }
+.choice-btn {
+  display: flex; align-items: flex-start; gap: 13px; text-align: left; width: 100%;
+  background: #FFFFFF; border: 1.5px solid var(--card-border); border-radius: var(--radius);
+  padding: 14px 16px; font-size: 15px; line-height: 1.42; color: var(--ink); cursor: pointer;
+  transition: border-color .14s ease, background .14s ease, transform .1s ease;
+}
+.choice-btn:hover:not(:disabled) { border-color: var(--gold); background: #FFFBEE; transform: translateX(2px); }
+.choice-letter {
+  flex: none; width: 25px; height: 25px; border-radius: 50%; border: 1.5px solid var(--ink-soft);
+  display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; color: var(--ink-soft);
+  transition: border-color .14s ease, color .14s ease, background .14s ease;
+}
+.choice-btn:disabled { cursor: default; }
+.choice-btn:disabled:hover { transform: none; }
+.choice-btn.correct { border-color: var(--green); background: var(--green-bg); }
+.choice-btn.correct .choice-letter { border-color: var(--green); color: var(--green); background: #fff; }
+.choice-btn.incorrect { border-color: var(--red); background: var(--red-bg); }
+.choice-btn.incorrect .choice-letter { border-color: var(--red); color: var(--red); background: #fff; }
+.choice-btn.dim { opacity: 0.5; }
+
+.feedback { margin-top: 20px; padding-top: 18px; border-top: 1px dashed var(--card-border); animation: fadeUp .3s ease; }
+.feedback-verdict { font-family: 'Spectral', serif; font-weight: 700; font-size: 16px; margin-bottom: 7px; }
+.feedback-verdict.right { color: var(--green); }
+.feedback-verdict.wrong { color: var(--red); }
+.feedback-explain { font-size: 14.5px; line-height: 1.58; color: var(--ink-soft); }
+
+.nav-row { display: flex; justify-content: flex-end; margin-top: 20px; gap: 12px; align-items: center; }
+.next-btn {
+  background: var(--ink); color: #FEFBF1; border: none; border-radius: 4px;
+  padding: 13px 26px; font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: background .14s ease, transform .1s ease;
+}
+.next-btn:hover { background: var(--red-deep); }
+.next-btn:active { transform: scale(0.98); }
+
+.stamp-btn {
+  position: relative; background: transparent; border: 3px solid var(--red); color: var(--red);
+  font-family: 'Spectral', serif; font-weight: 700; font-size: 17px; letter-spacing: 0.03em;
+  padding: 13px 28px; border-radius: 4px; cursor: pointer; transform: rotate(-1.4deg);
+  transition: transform .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.stamp-btn:hover:not(:disabled) { background: var(--red); color: #FEFBF1; transform: rotate(-1.4deg) scale(1.03); box-shadow: 0 10px 22px -8px rgba(156,43,59,0.55); }
+.stamp-btn:active:not(:disabled) { transform: rotate(-1.4deg) scale(0.99); }
+.stamp-btn:disabled { opacity: 0.35; cursor: not-allowed; border-color: var(--ink-faint); color: var(--ink-faint); transform: rotate(0); }
+.start-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 6px; }
+
+/* fill in the blank */
+.fib-q { font-size: 18.5px; line-height: 1.95; font-weight: 500; }
+.blank-input {
+  display: inline-block; min-width: 150px; width: auto;
+  border: none; border-bottom: 2px solid var(--ink-soft); background: transparent;
+  font-size: 17px; font-weight: 600; color: var(--red-deep); padding: 1px 5px 2px;
+  text-align: center;
+  transition: border-color .14s ease, background .14s ease;
+}
+.blank-input:focus { outline: none; border-bottom-color: var(--red); background: #FFFBEE; }
+.blank-input.right { border-bottom-color: var(--green); color: var(--green); }
+.blank-input.wrong { border-bottom-color: var(--red); color: var(--red); text-decoration: line-through; text-decoration-thickness: 1px; }
+.answer-key { font-size: 14.5px; color: var(--green); font-weight: 600; margin-top: 14px; }
+
+/* drills: tables */
+.drill-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.drill-table th {
+  text-align: left; font-family: 'Inter', sans-serif; font-size: 11.5px; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--gold); font-weight: 700;
+  padding: 0 8px 9px; border-bottom: 1.5px solid var(--gold-soft);
+}
+.drill-table td { padding: 9px 8px; border-bottom: 1px solid var(--card-border); vertical-align: middle; line-height: 1.45; }
+.drill-table tr:last-child td { border-bottom: none; }
+.drill-select {
+  width: 100%; max-width: 260px; padding: 7px 8px; font-size: 14px; color: var(--ink);
+  background: #FFFFFF; border: 1.5px solid var(--card-border); border-radius: 4px; cursor: pointer;
+  transition: border-color .14s ease, background .14s ease;
+}
+.drill-select.narrow { max-width: 132px; }
+.drill-select:hover { border-color: var(--gold); }
+.drill-select:focus { outline: none; border-color: var(--red); }
+.drill-select.right { border-color: var(--green); background: var(--green-bg); }
+.drill-select.wrong { border-color: var(--red); background: var(--red-bg); }
+.row-note { font-size: 13px; color: var(--green); font-weight: 600; margin-top: 4px; }
+.row-note.wrong { color: var(--red); }
+
+/* statement builder */
+.stmt-prompt {
+  background: var(--card); border: 1px solid var(--card-border); border-left: 4px solid var(--gold);
+  border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow-sm); margin-bottom: 24px;
+}
+.stmt-prompt h3 { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
+.stmt-prompt ul { margin: 0; padding-left: 20px; font-size: 14.5px; line-height: 1.75; color: var(--ink); }
+.stmt-prompt .ask { margin-top: 13px; font-size: 14px; color: var(--ink-soft); line-height: 1.55; }
+
+.stmt-head {
+  text-align: center; font-family: 'Spectral', serif; font-weight: 700; font-size: 16px;
+  line-height: 1.4; padding: 14px 10px 16px; border-bottom: 1.5px solid var(--ink);
+}
+.stmt-head span { display: block; font-weight: 600; font-size: 14.5px; color: var(--ink-soft); }
+.stmt-table { width: 100%; border-collapse: collapse; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.stmt-table td { padding: 6px 4px; }
+.stmt-table td.amt { width: 150px; text-align: right; }
+.stmt-table tr.head-row td { font-weight: 700; padding-top: 15px; font-family: 'Spectral', serif; font-size: 15.5px; }
+.stmt-table tr.indent td.lbl { padding-left: 22px; }
+.stmt-table tr.total td { border-top: 1px solid var(--ink); font-weight: 600; }
+.stmt-table tr.grand td { border-top: 1px solid var(--ink); border-bottom: 3px double var(--ink); font-weight: 700; }
+.amt-input {
+  width: 130px; text-align: right; padding: 6px 8px; font-size: 14.5px; font-variant-numeric: tabular-nums;
+  background: #FFFFFF; border: 1.5px solid var(--card-border); border-radius: 4px; color: var(--ink);
+  transition: border-color .14s ease, background .14s ease;
+}
+.amt-input:focus { outline: none; border-color: var(--red); background: #FFFBEE; }
+.amt-input.right { border-color: var(--green); background: var(--green-bg); color: var(--green); font-weight: 600; }
+.amt-input.wrong { border-color: var(--red); background: var(--red-bg); color: var(--red); font-weight: 600; }
+.lbl-select { width: 100%; max-width: 300px; padding: 6px 8px; font-size: 14px; background: #FFFFFF; border: 1.5px solid var(--card-border); border-radius: 4px; cursor: pointer; }
+.lbl-select:focus { outline: none; border-color: var(--red); }
+.lbl-select.right { border-color: var(--green); background: var(--green-bg); }
+.lbl-select.wrong { border-color: var(--red); background: var(--red-bg); }
+.lbl-input { width: 100%; max-width: 300px; padding: 6px 8px; font-size: 14px; background: #FFFFFF; border: 1.5px solid var(--card-border); border-radius: 4px; color: var(--ink); }
+.lbl-input:focus { outline: none; border-color: var(--red); background: #FFFBEE; }
+.lbl-input.right { border-color: var(--green); background: var(--green-bg); }
+.lbl-input.wrong { border-color: var(--red); background: var(--red-bg); }
+.calc-cell { font-weight: 700; padding-right: 9px; }
+.calc-cell.tie { color: var(--green); }
+.calc-cell.notie { color: var(--red); }
+.tie-note { font-size: 13.5px; margin-top: 14px; line-height: 1.5; }
+.tie-note.ok { color: var(--green); font-weight: 600; }
+.tie-note.bad { color: var(--red); font-weight: 600; }
+
+
+/* journal entries */
+.je-table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.je-table th {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gold);
+  font-weight: 700; padding: 0 6px 9px; border-bottom: 1.5px solid var(--gold-soft); text-align: left;
+}
+.je-table th.num { text-align: right; }
+.je-table td { padding: 4px 6px; vertical-align: middle; }
+.je-table tr.memo-row td { padding: 2px 6px 11px; border-bottom: 1px solid var(--card-border); }
+.je-table tr.memo-row:last-child td { border-bottom: none; }
+.je-ref { width: 40px; font-weight: 700; color: var(--ink-soft); vertical-align: top; padding-top: 11px; }
+.je-acct { min-width: 150px; }
+.je-num { width: 104px; text-align: right; }
+.je-table tr.cr-line td.je-acct { padding-left: 24px; }
+.je-memo { font-size: 12.5px; color: var(--ink-faint); font-style: italic; }
+.je-input {
+  width: 96px; text-align: right; padding: 5px 7px; font-size: 13.5px; font-variant-numeric: tabular-nums;
+  background: #FFFFFF; border: 1.5px solid var(--card-border); border-radius: 4px; color: var(--ink);
+  transition: border-color .14s ease, background .14s ease;
+}
+.je-input:focus { outline: none; border-color: var(--red); background: #FFFBEE; }
+.je-input.right { border-color: var(--green); background: var(--green-bg); color: var(--green); font-weight: 600; }
+.je-input.wrong { border-color: var(--red); background: var(--red-bg); color: var(--red); font-weight: 600; }
+.je-acct-field { width: 100%; padding: 5px 7px; font-size: 13.5px; background: #FFFFFF; border: 1.5px solid var(--card-border); border-radius: 4px; color: var(--ink); }
+.je-acct-field:focus { outline: none; border-color: var(--red); background: #FFFBEE; }
+.je-acct-field.right { border-color: var(--green); background: var(--green-bg); }
+.je-acct-field.wrong { border-color: var(--red); background: var(--red-bg); }
+.je-totals { display: flex; justify-content: flex-end; gap: 26px; margin-top: 16px; padding-top: 14px; border-top: 1.5px solid var(--ink); font-size: 14px; font-variant-numeric: tabular-nums; }
+.je-totals span { font-weight: 700; }
+.txn-list { margin: 0; padding-left: 22px; font-size: 14.5px; line-height: 1.85; }
+.txn-list li { padding-left: 2px; }
+@media (max-width: 640px) {
+  .je-table { font-size: 13px; }
+  .je-num { width: 78px; }
+  .je-input { width: 72px; font-size: 12.5px; padding: 4px 5px; }
+  .je-acct-field { font-size: 12.5px; }
+  .je-ref { width: 26px; }
+  .je-table td { padding: 3px 3px; }
+  .je-table tr.cr-line td.je-acct { padding-left: 12px; }
+}
+
+
+/* scrollable question list */
+.q-card { padding: 19px 22px 17px; margin-bottom: 13px; }
+.q-card .exam-question { font-size: 17px; line-height: 1.45; margin-bottom: 15px; }
+.q-card .fib-q { font-size: 16.5px; line-height: 1.95; }
+.q-card .choices { gap: 8px; }
+.q-card .choice-btn { padding: 11px 14px; font-size: 14.5px; }
+.q-num {
+  font-family: 'Spectral', serif; font-weight: 700; font-size: 13px; color: var(--gold);
+  letter-spacing: 0.06em; margin-bottom: 9px;
+}
+.check-sm {
+  background: var(--ink); color: #FEFBF1; border: none; border-radius: 4px;
+  padding: 8px 17px; font-size: 13.5px; font-weight: 600; cursor: pointer; margin-top: 15px;
+  transition: background .14s ease;
+}
+.check-sm:hover { background: var(--red-deep); }
+.q-card .feedback { margin-top: 16px; padding-top: 14px; }
+.quiz-scorebar {
+  position: sticky; top: 0; z-index: 5; background: var(--paper);
+  padding: 9px 0 10px; margin-bottom: 14px;
+  border-bottom: 1px solid var(--card-border);
+  font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums;
+}
+
+/* results */
+.results-card {
+  background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
+  padding: 34px 26px 30px; box-shadow: var(--shadow-md); margin-bottom: 28px; text-align: center;
+}
+.score-ring-wrap { position: relative; width: 172px; height: 172px; margin: 0 auto 18px; }
+.score-ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.score-ring-track { fill: none; stroke: rgba(27,35,64,0.09); stroke-width: 10; }
+.score-ring-fill {
+  fill: none; stroke: var(--red); stroke-width: 10; stroke-linecap: round;
+  stroke-dasharray: 471; stroke-dashoffset: 471;
+  transition: stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1), stroke 1s ease;
+}
+.score-ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.score-number { font-family: 'Spectral', serif; font-weight: 700; font-size: 27px; line-height: 1.1; }
+.score-pct { font-size: 13.5px; letter-spacing: 0.04em; color: var(--ink-soft); margin-top: 3px; }
+.results-line { font-size: 15.5px; color: var(--ink-soft); max-width: 44ch; margin: 0 auto; line-height: 1.55; }
+.review { margin-bottom: 32px; }
+.review-heading { font-family: 'Spectral', serif; font-size: 18.5px; font-weight: 600; margin-bottom: 15px; }
+.review-item {
+  background: var(--card); border: 1px solid var(--card-border); border-left: 4px solid var(--red);
+  border-radius: var(--radius); padding: 17px 19px; margin-bottom: 13px; box-shadow: var(--shadow-sm);
+}
+.review-q { font-size: 15px; font-weight: 600; margin-bottom: 9px; line-height: 1.42; }
+.review-your { font-size: 14px; color: var(--red-deep); margin-bottom: 4px; }
+.review-correct { font-size: 14px; color: var(--green); margin-bottom: 9px; }
+.review-explain { font-size: 14px; color: var(--ink-soft); line-height: 1.55; }
+.review-empty { font-size: 15.5px; color: var(--green); font-family: 'Spectral', serif; font-weight: 600; padding: 10px 0 28px; }
+
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (max-width: 640px) {
+  .stmt-table td.amt { width: 110px; }
+  .amt-input { width: 96px; }
+  .brand-text h1 { font-size: 23px; }
+  .exam-card { padding: 20px 18px 18px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark">$</span>
+      <div class="brand-text">
+        <h1>ACG5026 - Practice</h1>
+        <p>Will continue to be built out as the course goes on. Last edited August 31st.</p>
+        <p class="brand-by">Created by Jordan Ruppert</p>
+      </div>
+    </div>
+    <div class="header-rule"></div>
+  </header>
+  <main id="app"></main>
+</div>
+<script>
+const BANK = {};
+
+BANK.ch1mc = [
+{q:"Accounting is best defined as the process of:",o:["Preparing tax returns for individuals and businesses","Recording, summarizing, and analyzing financial transactions to help people make economic decisions","Auditing financial statements for accuracy","Forecasting future stock prices"],c:1,e:"Accounting is a process with three parts (record, summarize, analyze) and one purpose: helping people make economic decisions. Tax preparation and auditing are things accountants do, but they are not the definition of accounting itself."},
+{q:"Financial accounting is designed primarily for:",o:["Decision makers inside the company","Decision makers outside the company","Internal auditors","Production supervisors"],c:1,e:"Financial accounting serves external users: investors, creditors, suppliers, and customers. Managerial accounting is the one aimed at people inside the company."},
+{q:"Which of the following is a characteristic of managerial accounting?",o:["Must conform to GAAP","Historic in nature","Future oriented and highly detailed","General purpose reports for external users"],c:2,e:"Managerial accounting is built for planning and decisions that have not happened yet, so it is forward looking and as detailed as managers need. The other three options all describe financial accounting."},
+{q:"Which of the following is NOT a characteristic of financial accounting?",o:["Summarized information","Historic in nature","Must conform to GAAP","Can be creative, with no GAAP requirement"],c:3,e:"Financial accounting is bound by GAAP precisely because outsiders rely on it and need comparability. The freedom to be creative belongs to managerial accounting, which has no external rulebook."},
+{q:"Managerial accounting information is generated only when:",o:["The SEC requires it","The benefit of the information exceeds its cost","The auditors request it","The fiscal year closes"],c:1,e:"Because no outside body requires managerial reports, the only test is whether the report is worth what it costs to produce. If gathering the data costs more than the better decision is worth, the company skips it."},
+{q:"A single owner who typically manages the daily operations describes a:",o:["Partnership","Corporation","Sole proprietorship","Board of directors"],c:2,e:"A sole proprietorship has exactly one owner, and that owner usually runs the business day to day. A partnership has two or more owners; a corporation has many owners who typically do not manage operations."},
+{q:"Which of the following is an advantage of the corporate form of ownership?",o:["Double taxation","Limited liability","Paperwork and formalities","Owners must manage operations"],c:1,e:"Limited liability means a shareholder can lose the money invested but not personal assets beyond that. Double taxation and the paperwork burden are the two main disadvantages of incorporating."},
+{q:"Double taxation refers to:",o:["Paying both federal and state income tax","Corporate profits being taxed, then dividends and capital gains being taxed again","Being audited twice in the same year","Filing two separate tax returns"],c:1,e:"The same dollar of earnings gets hit twice: once as corporate profit, then again when it reaches the shareholder as a dividend or capital gain. This is the price of the corporate form."},
+{q:"Shareholders of large corporations typically:",o:["Manage the day-to-day operations","Provide resources such as cash in exchange for stock ownership and rely on financial statements","Prepare the financial statements","Set accounting standards"],c:1,e:"Shareholders of large companies are investors, not operators. Because they are not inside the business, they depend on the financial statements to evaluate management, assess financial condition, and predict future success."},
+{q:"The board of directors is:",o:["Appointed by management","Elected by shareholders to represent shareholder interest and oversee management","Required only of privately held companies","Responsible for performing the audit"],c:1,e:"The board works for the shareholders, not for management, and is legally required for publicly traded companies. It uses financial accounting information to review results and evaluate management performance."},
+{q:"Which sequence describes the basic business activities?",o:["Operating, planning, investing, financing","Planning, financing, investing, operating","Investing, operating, financing, planning","Financing, planning, operating, investing"],c:1,e:"A business plans first, then raises the money (financing), then spends it on resources (investing), then actually runs the business (operating). Planning always comes first because it sets what the other three are for."},
+{q:"Operating activities are:",o:["Acquiring and disposing of long-term assets","The production, promotion, and selling of products and services","Methods used to fund investments","Issuing stock and borrowing money"],c:1,e:"Operating activities are the day-to-day business: making the product, marketing it, and selling it. Buying assets is investing; raising money is financing."},
+{q:"Investing activities consist of:",o:["Acquiring and disposing of the resources a company uses to produce and sell its products","Generating revenue from customers","Obtaining cash from creditors and owners","Paying dividends to shareholders"],c:0,e:"Investing here means buying and selling the assets the business runs on, such as equipment and buildings. It does not mean investing in the stock market."},
+{q:"Financing activities draw on which two sources?",o:["Operating and investing activities","Debt financing from creditors and equity financing from owners","Revenues and expenses","Assets and liabilities"],c:1,e:"There are only two places outside money comes from: lenders (debt) and owners (equity). Those two sources are exactly what shows up on the right side of the balance sheet as liabilities and equity."},
+{q:"The accounting equation is:",o:["Assets + Liabilities = Equity","Assets = Liabilities + Equity","Revenues - Expenses = Assets","Assets = Equity - Liabilities"],c:1,e:"Everything the company owns had to be funded by either a creditor or an owner, so assets always equal liabilities plus equity. This equation is the entire structure of the balance sheet."},
+{q:"Liabilities represent:",o:["Owner claims on assets","Nonowner claims on assets","Economic resources","Revenues earned but not yet collected"],c:1,e:"A liability is a claim on the company's assets held by someone who is not an owner, such as a lender or supplier. Equity is the owner claim on those same assets."},
+{q:"Which financial statement reports performance over a period of time?",o:["Balance sheet","Income statement","Statement of financial position","None of these"],c:1,e:"The income statement covers a span of time, such as a month, quarter, or year. The balance sheet (also called the statement of financial position) is a snapshot at one single date."},
+{q:"Which of the following is NOT another name for the income statement?",o:["Statement of operations","Statement of earnings","Statement of financial position","Statement of profit and loss"],c:2,e:"Statement of financial position is the alternate name for the balance sheet, not the income statement. The income statement goes by statement of income, earnings, operations, or profit and loss."},
+{q:"The balance sheet reports:",o:["The results of operations over a period of time","The company's financial position at a point in time","Changes in equity over a period of time","Net cash flows over a period of time"],c:1,e:"The balance sheet is dated as of one specific day, which is why it is a snapshot rather than a movie. It lists the company's investments (assets) and its sources of financing (liabilities and equity)."},
+{q:"Retained earnings is:",o:["Cash the company holds in reserve","Amounts received from issuing new stock","Cumulative income since the company began business minus dividends paid to shareholders","Net income for the current period only"],c:2,e:"Retained earnings is a running total across the entire life of the company, not a single period, and it is reduced by every dividend ever paid. It is an equity balance, not a pile of cash."},
+{q:"Contributed capital consists of:",o:["Common stock and additional paid-in capital","Retained earnings and dividends","Revenues and expenses","Assets and liabilities"],c:0,e:"Contributed capital is what owners paid in directly when they bought stock, split between the stock's par value and anything paid above it. Retained earnings is earned capital, which is a different source."},
+{q:"Operating cash flows differ from net income because:",o:["Net income excludes revenue","Of differences in the timing of when revenues and expenses are recorded versus when cash is received and paid","Cash flows include dividends but net income does not","GAAP requires two different equations"],c:1,e:"Revenue can be recorded before the customer pays, and expenses can be recorded before the bill is paid, so profit and cash movement land in different periods. That timing gap is the entire reason a separate cash flow statement exists."},
+{q:"A fiscal year is:",o:["Always January 1 through December 31","A one-year reporting period that may end on a date other than December 31","A quarterly reporting period","The period covered by an audit"],c:1,e:"A fiscal year, also called an accounting year, is any 12-month reporting period. Companies often end it at a natural slow point in their business rather than at December 31."},
+{q:"GAAP is best described as:",o:["Federal tax law","Standards and accepted practices designed to guide the preparation of financial statements","Internal company policy","Auditing procedures only"],c:1,e:"GAAP is the rulebook for preparing financial statements, and it still leaves preparers considerable discretion. Its purpose is to let external users rely on audited statements."},
+{q:"The SEC:",o:["Prepares company financial statements","Regulates the issuance and trading of securities in the U.S.","Performs the audits of public companies","Writes international accounting standards"],c:1,e:"The SEC is the government regulator over securities issuance and trading, and it requires periodic reports from companies that cross its size and ownership thresholds. Independent audit firms, not the SEC, perform audits."},
+{q:"Which body currently establishes accounting standards in the United States?",o:["SEC","PCAOB","FASB","IASB"],c:2,e:"The FASB sets U.S. accounting standards and wrote the Conceptual Framework as a guide for issues no specific standard covers. The PCAOB handles auditing standards, and the IASB writes international standards."},
+{q:"Who prepares the financial statements and takes responsibility for what is disclosed in them?",o:["The independent auditor","Management","The SEC","The board of directors"],c:1,e:"Management both prepares the statements and owns responsibility for their accuracy and completeness. The independent auditor only expresses an opinion on what management produced."},
+{q:"A \"clean\" audit opinion indicates that:",o:["The financial statements are guaranteed to be accurate","The auditors believe the statements present fairly the economic condition of the firm","No fraud occurred during the year","The company complied with all tax law"],c:1,e:"A clean opinion is a professional judgment that the statements present fairly and follow GAAP. It is explicitly not a guarantee of accuracy and not a guarantee that no fraud exists."},
+{q:"The Sarbanes-Oxley Act established which body to approve auditing standards and monitor audit quality?",o:["FASB","SEC","PCAOB","IASB"],c:2,e:"SOX created the PCAOB in 2002 after a wave of concern over the quality of corporate financial reporting. Its job is oversight of auditors and audit quality, which is separate from the FASB's job of setting accounting standards."},
+{q:"The IASB:",o:["Has legal authority to impose its standards worldwide","Creates IFRS but has no legal authority to impose standards in any country","Replaced the FASB in the United States","Performs audits of multinational companies"],c:1,e:"The IASB writes IFRS to make financial information more comparable across countries, but adoption is up to each country's own regulators. It has no enforcement power of its own."},
+{q:"Refers to whether or not a particular amount is large enough to affect a decision.",o:["Materiality","Relevance","Timeliness","Verifiability"],c:0,e:"Materiality is a size test. If an amount is too small to change anyone's decision, the cost of applying full GAAP treatment to it is not worth it."},
+{q:"The activities of a business are considered to be independent and distinct from those of its owners or from other companies.",o:["Going concern","Economic entity","Accounting period","Monetary unit"],c:1,e:"The economic entity assumption draws a line around the business so the owner's personal transactions never mix into company records. Your slides also call this the separate economic entity assumption."},
+{q:"Accounting information should enable users to identify similarities and differences between sets of economic phenomena.",o:["Consistency","Comparability","Verifiability","Neutrality"],c:1,e:"Comparability is about comparing across different things, typically two companies. Consistency is the related but narrower idea of the same company using the same methods period after period."},
+{q:"Financial reporting information must be available to decision makers before it loses its capacity to influence decisions.",o:["Relevance","Predictive value","Timeliness","Feedback value"],c:2,e:"Timeliness is one of the three components of relevance, along with predictive value and feedback value. Correct information that arrives after the decision is made has no value."},
+{q:"Information is useful if it has the ability to influence decisions.",o:["Reliability","Relevance","Materiality","Understandability"],c:1,e:"Relevance means the information can actually make a difference in a decision. Reliability is the separate requirement that the information be accurate and unbiased."},
+{q:"Consensus among measures assures that the information is free of error.",o:["Verifiability","Neutrality","Representational faithfulness","Consistency"],c:0,e:"Verifiability means independent people measuring the same thing would arrive at the same answer. It is one of the three components of reliability, with representational faithfulness and neutrality."},
+{q:"Accounting information should reflect the underlying economic events that it purports to measure.",o:["Comparability","Verifiability","Representational faithfulness","Neutrality"],c:2,e:"Representational faithfulness means the number on the page actually matches the real economic event behind it. It is a component of reliability."},
+{q:"The financial reports are presented in one consistent monetary unit, such as U.S. dollars.",o:["Accounting period","Economic entity","Monetary unit","Going concern"],c:2,e:"The monetary unit assumption means everything reported is expressed in one currency, the dollar in the U.S. Your slides also refer to this as the measuring unit assumption."},
+{q:"A business is expected to have continuity in that it is expected to continue to operate indefinitely.",o:["Economic entity","Going concern","Accounting period","Consistency"],c:1,e:"The going concern assumption lets the company report assets at cost rather than at liquidation value, because it is not about to shut down. If that assumption fails, the accounting changes."},
+{q:"The life of a business can be divided into discrete accounting periods such as a year or quarter.",o:["Going concern","Accounting period","Timeliness","Monetary unit"],c:1,e:"The accounting period assumption is what makes periodic reporting possible: you cut the continuous life of a business into slices and report on each one. Without it there would be nothing to report until the company closed."},
+{q:"Materiality means that:",o:["All information must comply with GAAP regardless of size","Information that is not large enough to affect one's decision need not comply with GAAP","Only large companies must follow GAAP","All material assets must be physically inspected"],c:1,e:"Materiality is a practical exception built into GAAP. If an amount cannot change a user's decision, strict compliance is not required for it."},
+{q:"The matching principle states that:",o:["Assets must equal liabilities plus equity","The efforts of a given period (expenses) should be matched against the benefits (revenues) they generate","Cash receipts must match cash payments","Debits must equal credits"],c:1,e:"Matching is about timing: an expense is recognized in the period whose revenue it helped produce, not when the cash moved. Inventory sits on the balance sheet as an asset until the sale happens, then becomes cost of goods sold."}
+];
+BANK.ch2mc = [
+{q:"Assets are:",o:["Amounts owed to creditors","Resources that are expected to provide a company with future economic benefits","Revenues earned during the period","Owner contributions of cash"],c:1,e:"An asset is defined by what it will do for you in the future, not by what it cost. If a payment buys no future benefit, it is an expense instead."},
+{q:"Which of the following is NOT required for an expenditure to be capitalized as an asset?",o:["It must be owned or controlled by the company","It must possess expected future benefits that can be measured","A monetary value must be assignable to it","It must be paid for in cash"],c:3,e:"Capitalizing does not depend on how you paid; an asset bought entirely on credit still goes on the balance sheet. The three real tests are ownership or control, measurable future benefit, and an assignable monetary value."},
+{q:"An expenditure that is not capitalized is:",o:["Ignored entirely","Expensed on the income statement","Recorded as a liability","Added directly to equity"],c:1,e:"Every expenditure goes one of two places: onto the balance sheet as an asset (capitalized) or onto the income statement as an expense. If there is no measurable future benefit, it is expensed now."},
+{q:"Current assets are:",o:["Listed after noncurrent assets on the balance sheet","Expected to be converted into cash or used in operations within the next year or operating cycle","Never converted into cash","Always intangible"],c:1,e:"The dividing line is one year, or one operating cycle if that is longer. Current assets are listed first on the balance sheet, before noncurrent assets."},
+{q:"Current assets are listed in order of:",o:["Dollar amount","Liquidity","Maturity","Alphabetical order"],c:1,e:"Liquidity means how quickly something turns into cash, so cash itself is listed first. Order of maturity is how current liabilities are listed, not current assets."},
+{q:"Amounts due to the company from customers arising from the sale of products or services on credit are:",o:["Accounts payable","Accounts receivable","Unearned revenue","Marketable securities"],c:1,e:"Receivable means money coming in to you; payable means money going out. A receivable arises when you deliver first and collect later."},
+{q:"Costs paid in advance for rent, insurance, or other services are:",o:["Accrued liabilities","Prepaid expenses","Deferred revenue","Intangible assets"],c:1,e:"Paying in advance buys a future benefit, so it is an asset until that benefit is used up. Despite the word expense in the name, a prepaid expense sits on the balance sheet."},
+{q:"Short-term investments that can be quickly sold to raise cash are:",o:["Marketable securities","Long-term financial investments","Inventory","Goodwill"],c:0,e:"Marketable securities are current assets because management intends to convert them to cash soon. The same kind of security held with no near-term intent to sell is a long-term financial investment."},
+{q:"Patents, trademarks, franchise rights, and goodwill are:",o:["Current assets","Intangible assets","Accrued liabilities","Contributed capital"],c:1,e:"These provide future benefits but have no physical substance, which is exactly what makes them intangible. They are reported as noncurrent assets."},
+{q:"Which asset is typically measured at historical cost?",o:["Accounts receivable","Inventory","Property, plant and equipment","Marketable equity securities"],c:2,e:"PPE stays on the books at what the company originally paid, not at what it is worth today. Different asset types use different measurement bases, which is why this list is worth memorizing."},
+{q:"Inventory is measured at:",o:["Historical cost","Net realizable value","The lower of cost or net realizable value","Fair market value"],c:2,e:"Inventory uses whichever is lower, cost or net realizable value, so losses get recognized but gains do not. That conservatism is the point of the rule."},
+{q:"Accounts receivable is measured at:",o:["Historical cost","Net realizable value","Fair market value","Par value"],c:1,e:"Receivables are reported at the amount the company actually expects to collect, not the full face amount billed. Some customers never pay, and net realizable value reflects that."},
+{q:"Liabilities and equity both represent:",o:["Economic resources the company controls","Sources of capital used to finance the acquisition of assets","Expenses of the current period","Revenues earned during the period"],c:1,e:"The right side of the balance sheet answers one question: where did the money come from? Liabilities are borrowed sources, equity is owner sources, and together they fund every asset on the left side."},
+{q:"Which of the following is NOT one of the three conditions for reporting a liability?",o:["A future sacrifice is probable","The amount of the obligation is known or can be reasonably estimated","The transaction or event that caused the obligation has occurred","The obligation is due within one year"],c:3,e:"Being due within a year determines whether a liability is current or noncurrent; it does not determine whether it gets recorded at all. The three real conditions are probable sacrifice, measurable amount, and a past causing event."},
+{q:"Current liabilities are listed in order of:",o:["Liquidity","Maturity","Size","Account number"],c:1,e:"Liabilities are ordered by when they come due, soonest first. Assets are the ones ordered by liquidity."},
+{q:"Obligations for expenses that have been recorded but not yet paid are:",o:["Accounts payable","Accrued liabilities","Unearned revenue","Short-term borrowings"],c:1,e:"An accrued liability is the gap between recording an expense and paying it, such as wages earned by employees but not yet paid out. Accounts payable specifically covers amounts owed to suppliers for goods and services purchased on credit."},
+{q:"An obligation created when a company accepts payment in advance for goods or services it will deliver in the future is:",o:["Accounts receivable","Prepaid expense","Deferred (unearned) revenue","Accrued liability"],c:2,e:"Cash received before delivery is not revenue yet, it is a promise to deliver, which makes it a liability. It becomes revenue only once the company does the work."},
+{q:"The portion of long-term debt due to be paid within one year is reported as:",o:["Long-term debt","Current maturities of long-term debt","Accrued liabilities","Equity"],c:1,e:"A long-term loan gets split each year: the piece due within twelve months moves into current liabilities, the rest stays noncurrent. This is why one loan can appear in two places on the balance sheet."},
+{q:"Stockholders' equity reflects capital provided by the owners and represents a:",o:["Senior claim on assets ahead of creditors","Residual interest","Liability of the company","Contingent obligation"],c:1,e:"Residual means owners get what is left after creditors are paid, which follows directly from Assets minus Liabilities equals Equity. Owners are last in line, which is why they carry the most risk."},
+{q:"Additional paid-in capital is:",o:["The par value or stated value of stock issued","Amounts received from the primary owners above the par or stated value of the common stock","Accumulated earnings that have not been distributed","The amount paid to reacquire the company's own stock"],c:1,e:"When stock sells for more than its par value, the par portion goes to common stock and the excess goes to additional paid-in capital. Both are contributed capital; the split is just bookkeeping."},
+{q:"Treasury stock is:",o:["Government securities the company holds as an investment","The amount paid to reacquire the company's own common stock","Stock issued to employees as compensation","Shares authorized but never issued"],c:1,e:"Treasury stock is the company buying its own shares back, which reduces equity because it is the opposite of issuing stock. It has nothing to do with U.S. Treasury securities."},
+{q:"Retained earnings is:",o:["Contributed capital","The accumulated earnings that have not been distributed to stockholders as dividends","Cash set aside for future expansion","Net income for the current period only"],c:1,e:"Retained earnings accumulates over the company's whole life and is reduced by dividends. It is earned capital, not contributed capital, and it is not a cash account."},
+{q:"Which two items are classified as earned capital?",o:["Common stock and additional paid-in capital","Retained earnings and accumulated other comprehensive income","Treasury stock and common stock","Accounts payable and accrued liabilities"],c:1,e:"Earned capital is equity the company generated itself rather than collected from owners. Common stock, additional paid-in capital, and treasury stock are all contributed capital."},
+{q:"Which of the following correctly states the retained earnings calculation?",o:["Beginning retained earnings + Net income + Dividends","Beginning retained earnings + Net income - Dividends","Beginning retained earnings - Net income + Dividends","Beginning retained earnings + Dividends - Net loss"],c:1,e:"Profit adds to retained earnings and dividends take away from it, so income is added and dividends are subtracted. A net loss would be subtracted instead of added."},
+{q:"Retained earnings is important structurally because it:",o:["Links the income statement to the balance sheet","Links the balance sheet to the statement of cash flows","Measures the company's liquidity","Always equals total equity"],c:0,e:"Net income from the income statement flows into retained earnings, which is reported in equity on the balance sheet. That single account is the bridge between the two statements."},
+{q:"Revenues minus cost of goods sold equals:",o:["Net income","Gross profit","Operating income","Retained earnings"],c:1,e:"Gross profit is the first stop on the income statement, measuring what is left after the direct cost of the product. Subtracting operating expenses and other items from gross profit eventually gets you to net income."},
+{q:"Expenses are:",o:["Increases in net assets from delivering goods to customers","The outflow or use of assets to generate revenues","Distributions of profit to owners","Amounts borrowed from creditors"],c:1,e:"Expenses are resources consumed in the effort to produce revenue, which is why they decrease net assets. Dividends are distributions to owners, not expenses."},
+{q:"Operating expenses are:",o:["Costs relating to financing and investing activities","Usual and customary costs incurred to support the main business activities","Distributions to shareholders","Only cost of goods sold"],c:1,e:"Operating expenses are the routine costs of running the core business, such as wages, rent, and advertising. Interest is a financing cost, so it is nonoperating."},
+{q:"Interest revenue and interest expense are classified as:",o:["Operating items","Nonoperating items relating to financing and investing activities","Equity transactions","Current liabilities"],c:1,e:"Interest comes from how the company is financed or where it parked its cash, not from selling its product. Companies segregate these because operating and nonoperating results offer different insights into performance."},
+{q:"Cash-basis accounting recognizes revenues and expenses:",o:["When earned and incurred","Only when cash is received or paid","At the end of the fiscal year","When the audit is complete"],c:1,e:"Cash basis follows the bank account: no cash movement, no entry. That is simple but it can badly misstate performance when sales and collections fall in different periods."},
+{q:"Which basis of accounting is required by U.S. GAAP and IFRS?",o:["Cash basis","Accrual basis","Tax basis","Modified cash basis"],c:1,e:"Accrual accounting records revenue when it is earned and expenses when they are incurred, regardless of cash timing. Both U.S. GAAP and IFRS require it because it measures performance better than cash basis."},
+{q:"Revenue recognition requires that revenue be recorded only when it is:",o:["Collected in cash","Earned and realized or realizable","Included in the budget","Approved by the auditor"],c:1,e:"Two conditions must both hold: the company has done the work (earned) and payment is received or reasonably assured (realized or realizable). This is why a credit sale counts as revenue immediately even though no cash has arrived."}
+];
+BANK.ch1fib = [
+{q:"___ accounting is designed primarily for decision makers outside the company.",a:[["financial"]],e:"Financial accounting serves external users and must follow GAAP. Managerial accounting is the internal counterpart."},
+{q:"___ accounting information is future oriented, highly detailed, and not bound by GAAP.",a:[["managerial","management"]],e:"Because only insiders use it, managerial accounting has no external rulebook and can be as detailed and forward looking as managers need."},
+{q:"Two or more owners who are usually involved in managing the business describes a ___.",a:[["partnership"]],e:"A partnership has multiple owners who typically run the business themselves, unlike a corporation where ownership and management are separated."},
+{q:"A corporation is a separate legal ___.",a:[["entity"]],e:"Being its own legal entity is what allows a corporation to give owners limited liability and to survive changes in ownership."},
+{q:"Owners of a corporation benefit from ___ liability.",a:[["limited"]],e:"Shareholders can lose what they invested but creditors cannot reach their personal assets beyond that. This is the biggest advantage of incorporating."},
+{q:"___ taxation is a disadvantage of the corporate form.",a:[["double"]],e:"Corporate profits are taxed once at the company level, then again when distributed to shareholders as dividends or realized as capital gains."},
+{q:"The ___ is elected by shareholders to represent their interest and oversee management.",a:[["board of directors","board"]],e:"The board answers to shareholders, not to management, and is legally required for publicly traded companies."},
+{q:"___ activities consist of acquiring and disposing of the assets a company uses to produce and sell its products.",a:[["investing"]],e:"Investing here means buying and selling the resources the business runs on, such as equipment and buildings, not buying stocks."},
+{q:"___ activities are the production, promotion, and selling of products and services.",a:[["operating"]],e:"Operating activities are the day-to-day running of the business, which is where revenues and most expenses come from."},
+{q:"Funding investments through creditors is ___ financing, while funding through owners is ___ financing.",a:[["debt"],["equity","owner"]],e:"There are only two outside sources of capital: lenders and owners. They appear on the balance sheet as liabilities and equity."},
+{q:"The accounting equation is Assets = ___ + ___.",a:[["liabilities"],["equity","stockholders equity","shareholders equity","owners equity"]],e:"Every asset was funded either by a creditor or by an owner, so the two sides always balance. This equation is the structure of the balance sheet."},
+{q:"Liabilities are ___ claims on assets.",a:[["nonowner","non owner"]],e:"A liability is a claim held by someone who is not an owner, such as a lender or supplier. Equity is the owner claim on the same assets."},
+{q:"Another name for the balance sheet is the statement of ___.",a:[["financial position"]],e:"Both names describe the same thing: a snapshot of what the company owns and owes at one specific date."},
+{q:"Revenues minus expenses equals ___.",a:[["net income","income","net earnings","profit"]],e:"This is the income statement in one line. If expenses exceed revenues, the result is a net loss."},
+{q:"___ is cumulative income since the company began business minus dividends paid out to shareholders.",a:[["retained earnings"]],e:"Retained earnings accumulates over the entire life of the company and is reported in the equity section of the balance sheet. It is not a cash account."},
+{q:"Amounts received from issuing new stock during the period are called ___.",a:[["contributed capital","paid in capital"]],e:"Contributed capital is what owners paid in directly, made up of common stock plus additional paid-in capital. Retained earnings is earned capital instead."},
+{q:"A one-year reporting period is called a ___.",a:[["fiscal year","accounting year"]],e:"A fiscal year is any twelve-month reporting period and does not have to end on December 31."},
+{q:"The statement of cash flows reports net cash flows from ___, ___, and ___ activities.",a:[["operating"],["investing"],["financing"]],e:"These are the same three business activities from Chapter 1, now used as the three sections of the cash flow statement."},
+{q:"___ is the acronym for the standards and accepted practices that guide the preparation of financial statements.",a:[["gaap","generally accepted accounting principles"]],e:"GAAP exists so external users can rely on audited financial statements and compare one company to another."},
+{q:"The ___ regulates the issuance and trading of securities in the United States.",a:[["sec","securities and exchange commission"]],e:"The SEC is the government regulator and requires periodic reports from companies above its size and ownership thresholds. It does not perform the audits itself."},
+{q:"The ___ currently establishes accounting standards in the U.S. and developed the Conceptual Framework.",a:[["fasb","financial accounting standards board"]],e:"The FASB writes U.S. accounting standards. The Conceptual Framework guides issues that no specific standard addresses."},
+{q:"The ___ Act of 2002 was passed by Congress due to concerns over the quality of corporate financial reporting.",a:[["sarbanes oxley","sarbanes-oxley","sox","sarbanes"]],e:"SOX aimed to raise external users' confidence in financial statements, and it created the PCAOB to oversee auditors."},
+{q:"SOX established the ___ to approve auditing standards and monitor the quality of financial statements and audits.",a:[["pcaob","public company accounting oversight board","public accounting oversight board"]],e:"The PCAOB regulates the auditors, which is a separate job from the FASB's job of setting accounting standards."},
+{q:"The IASB is charged with creating ___.",a:[["ifrs","international financial reporting standards"]],e:"IFRS exists to make financial information comparable across countries, but the IASB has no legal authority to force any country to adopt it."},
+{q:"___ requires that information have the ability to make a difference in a decision, through timeliness, predictive value, and feedback value.",a:[["relevance","relevant"]],e:"Relevance is about usefulness to a decision. Reliability is the separate requirement that the information be accurate and unbiased."},
+{q:"___ requires that information be accurate and free of misstatement or bias.",a:[["reliability","reliable"]],e:"Reliability has three components: representational faithfulness, verifiability, and neutrality. Note that current FASB guidance calls this faithful representation, but your slides use reliability."},
+{q:"Under the ___ assumption, companies are assumed to have continuity.",a:[["going concern"]],e:"Assuming the business will keep operating is what justifies reporting assets at cost rather than at liquidation value."},
+{q:"___ enables users to identify similarities and differences between sets of economic phenomena, while ___ means conformity from one reporting period to the next.",a:[["comparability","comparable"],["consistency","consistent"]],e:"Comparability is across companies; consistency is across time within one company. They are easy to mix up on an exam."},
+{q:"Whether a particular amount is large enough to affect a decision is the concept of ___.",a:[["materiality","material"]],e:"Materiality is a size threshold. Amounts too small to change a decision do not need full GAAP treatment."},
+{q:"Under the ___ assumption, the activities of a business are independent and distinct from those of its owners or other companies.",a:[["economic entity","separate economic entity","entity","separate entity"]],e:"This assumption keeps the owner's personal transactions out of the company's books. Your slides also call it the separate economic entity assumption."},
+{q:"___ means information must reach decision makers before it loses its capacity to influence decisions.",a:[["timeliness","timely"]],e:"Timeliness is a component of relevance. Accurate information delivered after the decision is already made has no value."},
+{q:"___ means consensus among measures assures that the information is free of error.",a:[["verifiability","verifiable"]],e:"If independent people measuring the same item reach the same answer, the measure is verifiable. It is one of the three components of reliability."},
+{q:"___ means accounting information reflects the underlying economic events that it purports to measure.",a:[["representational faithfulness","representationally faithful","faithful representation"]],e:"The reported number has to match the real economic event behind it. This is a component of reliability."},
+{q:"The ___ assumption means financial reports are presented in one consistent monetary unit, such as U.S. dollars.",a:[["monetary unit","measuring unit","monetary"]],e:"Everything reported gets expressed in one currency. Your slides also call this the measuring unit assumption."},
+{q:"The ___ assumption means the life of a business can be divided into discrete periods such as a year or quarter.",a:[["accounting period","periodicity","period"]],e:"Cutting a continuous business life into slices is what makes periodic reporting possible at all."},
+{q:"The ___ principle states that the efforts of a given period (expenses) should be matched against the benefits (revenues) they generate.",a:[["matching","match"]],e:"Matching is about timing. Inventory cost sits on the balance sheet as an asset until the sale happens, then becomes cost of goods sold in that same period."},
+{q:"Management ___ the financial statements and takes responsibility for what is disclosed in them.",a:[["prepares","prepare"]],e:"Management prepares, the independent auditor only opines. Confusing these two roles is a common exam trap."},
+{q:"A clean audit opinion states that the financial statements present ___, not that they are accurate.",a:[["fairly","fair"]],e:"The auditor gives a professional judgment that the statements present fairly and follow GAAP. An audit opinion is explicitly not a guarantee."}
+];
+
+BANK.ch2fib = [
+{q:"Assets are resources expected to provide the company with future economic ___.",a:[["benefits","benefit"]],e:"An asset is defined by future benefit, not by what was paid. No measurable future benefit means it is an expense instead."},
+{q:"Placing an expenditure on the balance sheet as an asset is called ___ it.",a:[["capitalizing","capitalize","capitalized"]],e:"Capitalize means record as an asset. The opposite is to expense it, which puts it on the income statement immediately."},
+{q:"An expenditure that is not capitalized is ___ on the income statement.",a:[["expensed","expense"]],e:"Every expenditure goes one of two places: capitalized as an asset or expensed now. There is no third option."},
+{q:"___ assets are expected to be converted into cash or used in operations within the next year or operating cycle.",a:[["current"]],e:"One year, or one operating cycle if longer, is the dividing line between current and noncurrent."},
+{q:"Current assets are listed in order of ___.",a:[["liquidity","liquid"]],e:"Liquidity means how fast something becomes cash, so cash is listed first. Current liabilities are ordered by maturity instead."},
+{q:"Noncurrent assets are also referred to as ___ assets.",a:[["long term","long-term","longterm"]],e:"Noncurrent means the asset will not expire or convert to cash within a year, so it is listed after all current assets."},
+{q:"___ are amounts due to the company from customers arising from the sale of products or services on credit.",a:[["accounts receivable","receivables","ar","accounts receivables"]],e:"Receivable means money coming in. It arises when the company delivers first and collects later."},
+{q:"___ are costs paid in advance for rent, insurance, or other services.",a:[["prepaid expenses","prepaid expense","prepaids","prepaid"]],e:"Paying in advance buys a future benefit, so it is an asset until used up, despite the word expense in the name."},
+{q:"Goods purchased or produced for sale to customers are ___.",a:[["inventory","inventories"]],e:"Inventory is a current asset until it is sold, at which point its cost becomes cost of goods sold on the income statement."},
+{q:"Patents, trademarks, and goodwill provide future benefits but do not possess physical ___.",a:[["substance","form"]],e:"Lacking physical substance is exactly what makes an asset intangible. They are still reported as noncurrent assets."},
+{q:"Property, plant and equipment is generally measured at ___.",a:[["historical cost","cost"]],e:"PPE stays on the books at what was originally paid for it, not at current market value."},
+{q:"Inventory is measured at the ___ of cost or net realizable value.",a:[["lower"]],e:"Using whichever is lower recognizes losses but not gains. That conservatism is the point of the rule."},
+{q:"Accounts receivable is measured at ___ value.",a:[["net realizable","realizable","net realisable"]],e:"Receivables are reported at what the company actually expects to collect, since some customers will not pay."},
+{q:"Liabilities and equity represent ___ of capital used to finance the acquisition of assets.",a:[["sources","source"]],e:"The right side of the balance sheet answers where the money came from: lenders or owners."},
+{q:"A liability is reported when a future ___ is probable, the amount is known or reasonably estimable, and the causing event has already occurred.",a:[["sacrifice"]],e:"All three conditions must hold. Whether the obligation is due within a year affects classification, not whether it is recorded."},
+{q:"Current liabilities are listed in order of ___.",a:[["maturity","due date"]],e:"Liabilities are ordered by when they come due, soonest first. Assets are the ones ordered by liquidity."},
+{q:"___ are amounts owed to suppliers for goods and services purchased on credit.",a:[["accounts payable","payables","ap","accounts payables"]],e:"Payable means money going out. This is the mirror image of the seller's accounts receivable."},
+{q:"___ are obligations for expenses that have been recorded but not yet paid.",a:[["accrued liabilities","accrued liability","accruals","accrued expenses"]],e:"An accrued liability is the gap between recording an expense and paying it, such as wages employees have earned but not yet received."},
+{q:"___ revenue is an obligation created when a company accepts payment in advance for goods or services it will deliver in the future.",a:[["deferred","unearned","deferred or unearned"]],e:"Cash received before the work is done is a liability, not revenue. It becomes revenue only when the company delivers."},
+{q:"The portion of long-term debt due to be paid within one year is reported as ___ of long-term debt.",a:[["current maturities","current maturity","current portion"]],e:"One loan gets split each year: the piece due within twelve months sits in current liabilities, the rest stays noncurrent."},
+{q:"Capital invested directly by shareholders through stock sales is called ___ capital, while retained earnings is ___ capital.",a:[["contributed","paid in"],["earned"]],e:"Contributed capital comes from owners handing over money. Earned capital is equity the company generated through its own profits."},
+{q:"___ is the par value or stated value of stock issued to the primary owners of the company.",a:[["common stock","stock"]],e:"Amounts received above par go to additional paid-in capital instead. Both are contributed capital, so the split is only bookkeeping."},
+{q:"___ is the amount paid to reacquire the company's own common stock.",a:[["treasury stock","treasury shares"]],e:"Buying back your own shares is the opposite of issuing them, so treasury stock reduces total equity."},
+{q:"Ending retained earnings equals beginning retained earnings plus net income minus ___.",a:[["dividends","dividend"]],e:"Profit increases retained earnings and dividends reduce it. A net loss would be subtracted rather than added."},
+{q:"Retained earnings ___ the income statement to the balance sheet.",a:[["links","link","connects","connect","ties"]],e:"Net income flows into retained earnings, which is reported in equity on the balance sheet. That account is the bridge between the two statements."},
+{q:"Revenues minus cost of goods sold equals ___.",a:[["gross profit","gross margin"]],e:"Gross profit is the first subtotal on the income statement. Operating expenses come out after it, on the way down to net income."},
+{q:"___ are increases in net assets that are earned by delivering goods and services to customers.",a:[["revenues","revenue","sales"]],e:"Revenue is recognized when earned, which is why a credit sale counts immediately even though no cash has arrived yet."},
+{q:"___ accounting recognizes revenues and expenses only when cash is received or paid.",a:[["cash basis","cash","cash based"]],e:"Cash basis follows the bank account. It is simple but misstates performance when sales and collections fall in different periods, which is why GAAP requires accrual accounting instead."},
+{q:"Revenue is recognized only when it is ___ and ___ or realizable.",a:[["earned"],["realized"]],e:"Both conditions must hold: the work is done and payment is received or reasonably assured."},
+{q:"Under accrual accounting, expenses are ___ against the related revenue amounts.",a:[["matched","match"]],e:"An expense belongs in the period whose revenue it helped generate, regardless of when the cash was paid."}
+];
+BANK.defmatch = {
+  terms: ["Materiality","Economic entity","Comparability","Timeliness","Relevance","Verifiability","Representational faithfulness","Monetary unit","Going concern","Accounting period"],
+  rows: [
+    {d:"Refers to whether or not a particular amount is large enough to affect a decision.",a:"Materiality",e:"Materiality is a size threshold. Amounts too small to change a decision do not require full GAAP treatment."},
+    {d:"The activities of a business are considered to be independent and distinct from those of its owners or from other companies.",a:"Economic entity",e:"This assumption keeps the owner's personal transactions out of the company's books. Your slides also call it the separate economic entity assumption."},
+    {d:"Accounting information should enable users to identify similarities and differences between sets of economic phenomena.",a:"Comparability",e:"Comparability is across companies. Consistency, which sounds similar, is across time within one company."},
+    {d:"Financial reporting information must be available to decision makers before it loses its capacity to influence decisions.",a:"Timeliness",e:"Timeliness is a component of relevance. Correct information delivered after the decision is useless."},
+    {d:"Information is useful if it has the ability to influence decisions.",a:"Relevance",e:"Relevance is about whether information can change a decision. Reliability is the separate requirement that it be accurate and unbiased."},
+    {d:"Consensus among measures assures that the information is free of error.",a:"Verifiability",e:"If independent people measuring the same item get the same answer, the measure is verifiable. It is a component of reliability."},
+    {d:"Accounting information should reflect the underlying economic events that it purports to measure.",a:"Representational faithfulness",e:"The reported number must match the real economic event behind it. Also a component of reliability."},
+    {d:"The financial reports are presented in one consistent monetary unit, such as U.S. dollars.",a:"Monetary unit",e:"Everything reported is expressed in one currency. Your slides also call this the measuring unit assumption."},
+    {d:"A business is expected to have continuity in that it is expected to continue to operate indefinitely.",a:"Going concern",e:"Assuming the business keeps operating is what justifies reporting assets at cost instead of liquidation value."},
+    {d:"The life of a business can be divided into discrete accounting periods such as a year or quarter.",a:"Accounting period",e:"Slicing a continuous business life into periods is what makes periodic reporting possible."}
+  ]
+};
+
+BANK.companies = ["Ridgeline Industries","Calder Manufacturing","Brightpath Retail","Northgate Foods","Summit Apparel","Halloran Logistics","Verdant Outdoor","Kessler Tools","Pinehurst Beverage","Ashford Electronics"];
+BANK.dates = ["December 31, 2025","June 30, 2025","May 31, 2025","September 30, 2025","January 31, 2026","March 31, 2026"];
+(function () {
+"use strict";
+
+var app = document.getElementById("app");
+
+/* ---------- utilities ---------- */
+function h(html) { var d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstChild; }
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+function rnd(min, max, step) { step = step || 1; var n = Math.floor(Math.random() * ((max - min) / step + 1)); return min + n * step; }
+function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+function fmt(n) {
+  if (n === null || isNaN(n)) return "";
+  var neg = n < 0, s = Math.abs(Math.round(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return neg ? "(" + s + ")" : s;
+}
+function parseAmt(s) {
+  if (s === null || s === undefined) return NaN;
+  s = String(s).trim();
+  if (s === "") return NaN;
+  var neg = /^\(.*\)$/.test(s);
+  s = s.replace(/[(),$\s]/g, "");
+  if (s === "" || isNaN(Number(s))) return NaN;
+  var v = Number(s);
+  return neg ? -Math.abs(v) : v;
+}
+function norm(s) {
+  return String(s == null ? "" : s).toLowerCase()
+    .replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ")
+    .replace(/^the /, "").trim();
+}
+function matchText(input, accepted) {
+  var n = norm(input);
+  if (!n) return false;
+  for (var i = 0; i < accepted.length; i++) { if (n === norm(accepted[i])) return true; }
+  return false;
+}
+function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function scrollTop() { try { window.scrollTo({ top: 0, behavior: "auto" }); } catch (e) {} }
+function render(node) {
+  app.innerHTML = "";
+  node.classList.add("screen", "screen-enter");
+  app.appendChild(node);
+  scrollTop();
+}
+
+/* ---------- mode registry ---------- */
+var MODES = [
+  { id: "ch1mc",  group: "Chapter 1",  name: "Ch. 1 Definitions and Concepts", meta: "42 questions", kind: "quiz", bank: "ch1mc", type: "mc", tag: "multiple choice" },
+  { id: "ch1fib", group: "Chapter 1",  name: "Ch. 1 Definitions and Concepts", meta: "38 questions", kind: "quiz", bank: "ch1fib", type: "fib", tag: "fill in the blank" },
+  { id: "match",  group: "Chapter 1",  name: "Definition Matching Drill", meta: "10 terms from the homework", kind: "match", tag: "dropdown" },
+  { id: "ch2mc",  group: "Chapter 2",  name: "Ch. 2 Definitions and Concepts", meta: "32 questions", kind: "quiz", bank: "ch2mc", type: "mc", tag: "multiple choice" },
+  { id: "ch2fib", group: "Chapter 2",  name: "Ch. 2 Definitions and Concepts", meta: "30 questions", kind: "quiz", bank: "ch2fib", type: "fib", tag: "fill in the blank" },
+  { id: "bsdrop", group: "Balance Sheet", name: "Balance Sheet Practice", meta: "Classified balance sheet, new numbers each time", kind: "stmt", variant: "dropdown", tag: "dropdown" },
+  { id: "bsblank",group: "Balance Sheet", name: "Balance Sheet Practice", meta: "New numbers each time, plus solve for retained earnings", kind: "stmt", variant: "blank", tag: "fill in the blank" },
+  { id: "isdrop", group: "Income Statement", name: "Income Statement Practice", meta: "New numbers each time", kind: "income", variant: "dropdown", tag: "dropdown" },
+  { id: "isblank",group: "Income Statement", name: "Income Statement Practice", meta: "New numbers each time", kind: "income", variant: "blank", tag: "fill in the blank" },
+  { id: "cfdrop", group: "Statement of Cash Flows", name: "Cash Flows Practice", meta: "New numbers each time", kind: "cash", variant: "dropdown", tag: "dropdown" },
+  { id: "cfblank",group: "Statement of Cash Flows", name: "Cash Flows Practice", meta: "New numbers each time", kind: "cash", variant: "blank", tag: "fill in the blank" },
+  { id: "classify", group: "Debits, Credits, and Journal Entries", name: "Classifying Items in Financial Statements", meta: "8 items, new mix each time", kind: "classify", tag: "dropdown" },
+  { id: "drcr",  group: "Debits, Credits, and Journal Entries", name: "Debit and Credit Rules", meta: "The rules chart, 5 account types", kind: "drcr", tag: "dropdown" },
+  { id: "jedrop", group: "Debits, Credits, and Journal Entries", name: "Journal Entry Practice", meta: "9 transactions, new numbers each time", kind: "journal", variant: "dropdown", tag: "dropdown" },
+  { id: "jeblank",group: "Debits, Credits, and Journal Entries", name: "Journal Entry Practice", meta: "9 transactions, new numbers each time", kind: "journal", variant: "blank", tag: "fill in the blank" },
+  { id: "bsisdrop", group: "Build Statements From Transactions", name: "Balance Sheet and Income Statement", meta: "8 transactions, new numbers each time", kind: "tx", variant: "dropdown", tag: "dropdown" },
+  { id: "bsisblank", group: "Build Statements From Transactions", name: "Balance Sheet and Income Statement", meta: "8 transactions, new numbers each time", kind: "tx", variant: "blank", tag: "fill in the blank" }
+];
+
+/* ---------- home ---------- */
+function showHome() {
+  var wrap = document.createElement("div");
+  wrap.appendChild(h('<div class="intro-card">' +
+    '<p class="intro-kicker">How this works</p>' +
+    '<p class="intro-text">Pick a drill below. You can practice each problem as many times as you want and each time it will generate new numbers. ' +
+    'There are options for multiple choice and dropdown practice for beginners, and also fill in the blank problems for those wanting more advanced practice.</p></div>'));
+
+  var lastGroup = null;
+  var list = null;
+  MODES.forEach(function (m, i) {
+    if (m.group !== lastGroup) {
+      wrap.appendChild(h('<p class="section-label">' + escapeHtml(m.group) + '</p>'));
+      list = h('<div class="mode-list"></div>');
+      wrap.appendChild(list);
+      lastGroup = m.group;
+    }
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mode-row";
+    btn.disabled = !!m.locked;
+    btn.innerHTML =
+      '<span class="mode-num">' + (i + 1) + '</span>' +
+      '<span class="mode-info"><span class="mode-name">' + escapeHtml(m.name) + '</span>' +
+      '<span class="mode-meta">' + escapeHtml(m.meta) + '</span></span>' +
+      (m.tag ? '<span class="mode-tag' + (m.tag === "fill in the blank" ? " hard" : "") + '">' + escapeHtml(m.tag) + '</span>' : "");
+    if (!m.locked) btn.addEventListener("click", function () { launch(m); });
+    list.appendChild(btn);
+  });
+  render(wrap);
+}
+
+function launch(mode) {
+  if (mode.kind === "quiz") startQuiz(mode);
+  else if (mode.kind === "match") startMatch(mode);
+  else if (mode.kind === "stmt") startStatement(mode);
+  else if (mode.kind === "income") startIncome(mode);
+  else if (mode.kind === "cash") startCashFlow(mode);
+  else if (mode.kind === "drcr") startDrCr(mode);
+  else if (mode.kind === "classify") startClassify(mode);
+  else if (mode.kind === "journal") startJournal(mode);
+  else if (mode.kind === "tx") startTransactions(mode);
+}
+
+function homeLink() {
+  var b = document.createElement("button");
+  b.type = "button";
+  b.className = "link-btn subtle";
+  b.innerHTML = "&larr; All drills";
+  b.addEventListener("click", showHome);
+  return b;
+}
+
+/* ---------- quiz engine: scrollable list, answer in any order ---------- */
+function startQuiz(mode) {
+  var queue = shuffle(BANK[mode.bank]);
+  var answered = 0, score = 0;
+  var wrap = document.createElement("div");
+
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  wrap.appendChild(bar);
+
+  wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">' + escapeHtml(mode.name) + "</p>" +
+    '<p class="intro-text">' + (mode.type === "mc"
+      ? "Scroll and answer whichever ones you want, in any order. Each question explains itself as soon as you answer it."
+      : "Scroll and answer whichever ones you want, in any order. Type your answer and press Enter or hit Check. Common variations are accepted, so you do not have to match the wording exactly.") +
+    " Reshuffle at the bottom whenever you want a fresh order.</p></div>"));
+
+  var scorebar = h('<div class="quiz-scorebar"></div>');
+  wrap.appendChild(scorebar);
+  function updateScore() {
+    scorebar.textContent = answered === 0
+      ? queue.length + " questions. Nothing answered yet."
+      : score + " of " + answered + " correct, " + (queue.length - answered) + " left";
+  }
+  updateScore();
+
+  var LETTERS = ["A", "B", "C", "D"];
+
+  queue.forEach(function (item, qi) {
+    var card = h('<div class="exam-card q-card"></div>');
+    card.appendChild(h('<p class="q-num">' + (qi + 1) + "</p>"));
+    var feedback = h('<div class="feedback" hidden><p class="feedback-verdict"></p><p class="feedback-explain"></p></div>');
+
+    function finish(isRight) {
+      answered++;
+      if (isRight) score++;
+      updateScore();
+      feedback.querySelector(".feedback-verdict").textContent = isRight ? "Correct." : "Not quite.";
+      feedback.querySelector(".feedback-verdict").className = "feedback-verdict " + (isRight ? "right" : "wrong");
+      feedback.querySelector(".feedback-explain").textContent = item.e;
+      feedback.hidden = false;
+    }
+
+    if (mode.type === "mc") {
+      card.appendChild(h('<h2 class="exam-question">' + escapeHtml(item.q) + "</h2>"));
+      var choices = h('<div class="choices"></div>');
+      var order = shuffle(item.o.map(function (_, i) { return i; }));
+      var correctDisplay = order.indexOf(item.c);
+      var done = false;
+      order.forEach(function (orig, disp) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "choice-btn";
+        btn.innerHTML = '<span class="choice-letter">' + LETTERS[disp] + '</span><span>' + escapeHtml(item.o[orig]) + "</span>";
+        btn.addEventListener("click", function () {
+          if (done) return;
+          done = true;
+          Array.prototype.forEach.call(choices.children, function (c, idx) {
+            c.disabled = true;
+            if (idx === correctDisplay) c.classList.add("correct");
+            else if (idx === disp) c.classList.add("incorrect");
+            else c.classList.add("dim");
+          });
+          finish(disp === correctDisplay);
+        });
+        choices.appendChild(btn);
+      });
+      card.appendChild(choices);
+    } else {
+      var parts = item.q.split("___");
+      var qEl = h('<h2 class="fib-q"></h2>');
+      var inputs = [];
+      parts.forEach(function (p, i) {
+        qEl.appendChild(document.createTextNode(p));
+        if (i < parts.length - 1) {
+          var inp = document.createElement("input");
+          inp.type = "text";
+          inp.className = "blank-input";
+          inp.autocapitalize = "off";
+          inp.autocomplete = "off";
+          inp.spellcheck = false;
+          inputs.push(inp);
+          qEl.appendChild(inp);
+        }
+      });
+      card.appendChild(qEl);
+      var keyLine = h('<p class="answer-key" hidden></p>');
+      card.appendChild(keyLine);
+      var checkBtn = h('<button type="button" class="check-sm">Check</button>');
+      var checked = false;
+      function doCheck() {
+        if (checked) return;
+        checked = true;
+        var allRight = true, keys = [];
+        inputs.forEach(function (inp, i) {
+          var ok = matchText(inp.value, item.a[i]);
+          inp.classList.add(ok ? "right" : "wrong");
+          inp.readOnly = true;
+          if (!ok) allRight = false;
+          keys.push(item.a[i][0]);
+        });
+        if (!allRight) {
+          keyLine.textContent = "Answer: " + keys.join(", ");
+          keyLine.hidden = false;
+        }
+        checkBtn.hidden = true;
+        finish(allRight);
+      }
+      checkBtn.addEventListener("click", doCheck);
+      inputs.forEach(function (inp) {
+        inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); doCheck(); } });
+      });
+      card.appendChild(checkBtn);
+    }
+
+    card.appendChild(feedback);
+    wrap.appendChild(card);
+  });
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var again = h('<button type="button" class="stamp-btn"><span>Shuffle and start over</span></button>');
+  again.addEventListener("click", function () { startQuiz(mode); });
+  var back = h('<button type="button" class="link-btn">Pick a different drill</button>');
+  back.addEventListener("click", showHome);
+  sb.appendChild(again);
+  sb.appendChild(back);
+  wrap.appendChild(sb);
+  render(wrap);
+}
+
+/* ---------- definition matching drill ---------- */
+function startMatch(mode) {
+  var rows = shuffle(BANK.defmatch.rows);
+  var opts = shuffle(BANK.defmatch.terms);
+  var wrap = document.createElement("div");
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">10 items</div>'));
+  wrap.appendChild(bar);
+  wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">Match each description to its term</p>' +
+    '<p class="intro-text">Same ten items as the Chapter 1 homework. Every term is used exactly once.</p></div>'));
+
+  var card = h('<div class="exam-card"></div>');
+  var table = h('<table class="drill-table"><thead><tr><th>Description</th><th>Term</th></tr></thead><tbody></tbody></table>');
+  var tbody = table.querySelector("tbody");
+  var selects = [];
+  rows.forEach(function (r, i) {
+    var tr = document.createElement("tr");
+    var td1 = document.createElement("td");
+    td1.textContent = String.fromCharCode(97 + i) + ". " + r.d;
+    var td2 = document.createElement("td");
+    var sel = document.createElement("select");
+    sel.className = "drill-select";
+    sel.innerHTML = '<option value="">Select a term</option>' + opts.map(function (o) {
+      return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
+    }).join("");
+    var note = h('<p class="row-note" hidden></p>');
+    td2.appendChild(sel);
+    td2.appendChild(note);
+    tr.appendChild(td1); tr.appendChild(td2);
+    tbody.appendChild(tr);
+    selects.push({ sel: sel, note: note, row: r });
+  });
+  card.appendChild(table);
+  wrap.appendChild(card);
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check answers</span></button>');
+  var scoreLbl = h('<div class="topbar-label"></div>');
+  var reshuffle = h('<button type="button" class="link-btn">Shuffle and retry</button>');
+  reshuffle.addEventListener("click", function () { startMatch(mode); });
+  checkBtn.addEventListener("click", function () {
+    var right = 0;
+    selects.forEach(function (s) {
+      var ok = s.sel.value === s.row.a;
+      s.sel.classList.remove("right", "wrong");
+      s.sel.classList.add(ok ? "right" : "wrong");
+      s.note.hidden = false;
+      s.note.className = "row-note" + (ok ? "" : " wrong");
+      s.note.textContent = ok ? s.row.e : s.row.a + ". " + s.row.e;
+      if (ok) right++;
+    });
+    scoreLbl.textContent = right + " of 10 correct";
+  });
+  sb.appendChild(scoreLbl);
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var sb2 = h('<div class="nav-row"></div>');
+  sb2.appendChild(reshuffle);
+  wrap.appendChild(sb2);
+  render(wrap);
+}
+
+/* ---------- balance sheet builder ---------- */
+var BS_ACCOUNTS = {
+  ca: [
+    { label: "Cash", alias: ["cash", "cash and equivalents", "cash and cash equivalents"], min: 600, max: 9000, always: true },
+    { label: "Marketable securities", alias: ["marketable securities", "short term investments", "short term investment"], min: 200, max: 3000 },
+    { label: "Accounts receivable", alias: ["accounts receivable", "receivables", "ar", "accounts receivables"], min: 400, max: 6500, always: true },
+    { label: "Inventory", alias: ["inventory", "inventories"], min: 500, max: 8000, always: true },
+    { label: "Prepaid expenses", alias: ["prepaid expenses", "prepaid expense", "prepaids", "prepaid"], min: 90, max: 1400 }
+  ],
+  nca: [
+    { label: "Property, plant and equipment, net", alias: ["property plant and equipment net", "property plant and equipment", "ppe", "ppe net", "property plant equipment"], min: 3000, max: 30000, always: true },
+    { label: "Long-term investments", alias: ["long term investments", "long term investment", "long term financial investments"], min: 400, max: 6000 },
+    { label: "Intangible assets", alias: ["intangible assets", "intangibles", "intangible asset", "intangible and other assets"], min: 300, max: 5000 }
+  ],
+  cl: [
+    { label: "Accounts payable", alias: ["accounts payable", "payables", "ap", "accounts payables"], min: 500, max: 7000, always: true },
+    { label: "Accrued liabilities", alias: ["accrued liabilities", "accrued liability", "accruals", "accrued expenses"], min: 200, max: 4000 },
+    { label: "Unearned revenue", alias: ["unearned revenue", "deferred revenue", "unearned revenues"], min: 100, max: 1800 },
+    { label: "Current maturities of long-term debt", alias: ["current maturities of long term debt", "current maturities", "current portion of long term debt", "current portion of debt"], min: 100, max: 2200 }
+  ],
+  ncl: [
+    { label: "Long-term debt", alias: ["long term debt", "long term debts", "bonds payable", "notes payable long term"], min: 1500, max: 18000, always: true },
+    { label: "Other long-term liabilities", alias: ["other long term liabilities", "other long term liability", "other noncurrent liabilities"], min: 300, max: 5000 }
+  ],
+  eq: [
+    { label: "Common stock", alias: ["common stock", "stock"], min: 20, max: 900, always: true },
+    { label: "Additional paid-in capital", alias: ["additional paid in capital", "apic", "paid in capital"], min: 800, max: 12000, always: true },
+    { label: "Retained earnings", alias: ["retained earnings", "retained earnings deficit"], plug: true, always: true }
+  ]
+};
+
+var BS_DISTRACTORS = ["Sales revenue", "Cost of goods sold", "Wages expense", "Dividends paid", "Net income"];
+
+var BS_SECTIONS = [
+  { id: "ca",  total: "tca", totalText: "Total current assets" },
+  { id: "nca", total: null },
+  { id: "cl",  total: "tcl", totalText: "Total current liabilities" },
+  { id: "ncl", total: null },
+  { id: "eq",  total: "te",  totalText: "Total stockholders' equity" }
+];
+
+function chooseAccounts(list) {
+  var always = list.filter(function (a) { return a.always; });
+  var optional = list.filter(function (a) { return !a.always; });
+  var take = optional.length ? rnd(optional.length > 1 ? 1 : 0, optional.length) : 0;
+  var chosen = shuffle(optional).slice(0, take);
+  // keep the original declared order (liquidity for assets, maturity for liabilities)
+  return list.filter(function (a) { return a.always || chosen.indexOf(a) !== -1; });
+}
+
+function makeBalanceSheet(hidePlug) {
+  var p, tries = 0;
+  do {
+    p = { sections: {} };
+    ["ca", "nca", "cl", "ncl", "eq"].forEach(function (sec) {
+      p.sections[sec] = chooseAccounts(BS_ACCOUNTS[sec]).map(function (a) {
+        return { label: a.label, alias: a.alias, plug: !!a.plug, amt: a.plug ? 0 : rnd(a.min, a.max, 1) };
+      });
+    });
+    var sum = function (sec) { return p.sections[sec].reduce(function (t, r) { return t + r.amt; }, 0); };
+    p.tca = sum("ca");
+    p.ta = p.tca + sum("nca");
+    p.tcl = sum("cl");
+    p.tl = p.tcl + sum("ncl");
+    var plugRow = p.sections.eq.filter(function (r) { return r.plug; })[0];
+    plugRow.amt = p.ta - p.tl - p.sections.eq.reduce(function (t, r) { return t + (r.plug ? 0 : r.amt); }, 0);
+    p.re = plugRow.amt;
+    p.te = sum("eq");
+    tries++;
+  } while ((p.re < -2200 || p.re > p.ta * 0.6 || p.tl > p.ta * 0.88 || p.tl < p.ta * 0.25) && tries < 600);
+
+  p.company = pick(BANK.companies);
+  p.date = pick(BANK.dates);
+  p.hidePlug = !!hidePlug;
+  var facts = [];
+  ["ca", "nca", "cl", "ncl", "eq"].forEach(function (sec) {
+    p.sections[sec].forEach(function (r) {
+      if (r.plug && hidePlug) return;
+      facts.push([r.label, r.amt]);
+    });
+  });
+  p.facts = shuffle(facts);
+  return p;
+}
+
+function buildBsRows(p) {
+  var rows = [], fieldKeys = [];
+  rows.push({ t: "head", text: "Assets" });
+  ["ca", "nca"].forEach(function (sec) {
+    p.sections[sec].forEach(function (r, i) {
+      var key = sec + i;
+      fieldKeys.push({ key: key, sec: sec, row: r });
+      rows.push({ t: "in", key: key, sec: sec, indent: true });
+    });
+    var s = BS_SECTIONS.filter(function (x) { return x.id === sec; })[0];
+    if (s.total) rows.push({ t: "calc", calc: s.total, text: s.totalText, cls: "total", indent: true });
+  });
+  rows.push({ t: "calc", calc: "ta", text: "Total assets", cls: "grand" });
+  rows.push({ t: "head", text: "Liabilities and stockholders' equity" });
+  ["cl", "ncl"].forEach(function (sec) {
+    p.sections[sec].forEach(function (r, i) {
+      var key = sec + i;
+      fieldKeys.push({ key: key, sec: sec, row: r });
+      rows.push({ t: "in", key: key, sec: sec, indent: true });
+    });
+    var s = BS_SECTIONS.filter(function (x) { return x.id === sec; })[0];
+    if (s.total) rows.push({ t: "calc", calc: s.total, text: s.totalText, cls: "total", indent: true });
+  });
+  rows.push({ t: "calc", calc: "tl", text: "Total liabilities", cls: "total" });
+  rows.push({ t: "head", text: "Stockholders' equity" });
+  p.sections.eq.forEach(function (r, i) {
+    var key = "eq" + i;
+    fieldKeys.push({ key: key, sec: "eq", row: r });
+    rows.push({ t: "in", key: key, sec: "eq", indent: true });
+  });
+  rows.push({ t: "calc", calc: "te", text: "Total stockholders' equity", cls: "total", indent: true });
+  rows.push({ t: "calc", calc: "tle", text: "Total liabilities and stockholders' equity", cls: "grand" });
+  return { rows: rows, fieldKeys: fieldKeys };
+}
+
+var BS_SECTION_NAMES = { ca: "current assets", nca: "noncurrent assets", cl: "current liabilities", ncl: "noncurrent liabilities", eq: "stockholders' equity" };
+
+function startStatement(mode) {
+  var isDrop = mode.variant === "dropdown";
+  var prob = makeBalanceSheet(!isDrop);
+  var built = buildBsRows(prob);
+  var wrap = document.createElement("div");
+
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">' + (isDrop ? "Dropdown account names" : "Everything blank") + "</div>"));
+  wrap.appendChild(bar);
+
+  var factList = prob.facts.map(function (f) {
+    return "<li>" + escapeHtml(f[0]) + ", $" + fmt(f[1]) + (f[1] < 0 ? " (a deficit)" : "") + "</li>";
+  }).join("");
+  var ask = isDrop
+    ? "Build the classified balance sheet below. The accounts above are listed in no particular order, so you have to sort them into current assets, noncurrent assets, current liabilities, noncurrent liabilities, and equity yourself. Subtotals and totals add themselves up as you type."
+    : "<strong>Retained earnings is not given.</strong> Build the classified balance sheet below, then solve for retained earnings using the accounting equation. The accounts above are in no particular order, so you have to classify them yourself. Subtotals and totals add themselves up as you type.";
+  wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
+    '<p class="ask" style="margin-top:0;margin-bottom:11px">Account balances as of ' + escapeHtml(prob.date) + ", in millions:</p>" +
+    "<ul>" + factList + "</ul><p class=\"ask\">" + ask + "</p></div>"));
+
+  var card = h('<div class="exam-card" style="padding-top:0"></div>');
+  card.appendChild(h('<div class="stmt-head">' + escapeHtml(prob.company) + "<span>Balance Sheet</span><span>" + escapeHtml(prob.date) + "</span></div>"));
+  var table = h('<table class="stmt-table"><tbody></tbody></table>');
+  var tbody = table.querySelector("tbody");
+  var amtFields = {}, lblFields = {}, calcCells = {};
+
+  var labelPool = [];
+  ["ca", "nca", "cl", "ncl", "eq"].forEach(function (sec) {
+    BS_ACCOUNTS[sec].forEach(function (a) { labelPool.push(a.label); });
+  });
+  labelPool = labelPool.concat(BS_DISTRACTORS);
+
+  built.rows.forEach(function (r) {
+    var tr = document.createElement("tr");
+    var cls = [];
+    if (r.indent) cls.push("indent");
+    if (r.cls) cls.push(r.cls);
+    var tdL = document.createElement("td");
+    tdL.className = "lbl";
+    var tdA = document.createElement("td");
+    tdA.className = "amt";
+
+    if (r.t === "head") {
+      cls.push("head-row");
+      tdL.textContent = r.text;
+    } else if (r.t === "in") {
+      if (isDrop) {
+        var sel = document.createElement("select");
+        sel.className = "lbl-select";
+        sel.innerHTML = '<option value="">Select account</option>' + shuffle(labelPool).map(function (o) {
+          return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
+        }).join("");
+        tdL.appendChild(sel);
+        lblFields[r.key] = sel;
+      } else {
+        var li = document.createElement("input");
+        li.type = "text";
+        li.className = "lbl-input";
+        li.placeholder = "Account name";
+        li.autocomplete = "off";
+        li.spellcheck = false;
+        tdL.appendChild(li);
+        lblFields[r.key] = li;
+      }
+      var ai = document.createElement("input");
+      ai.type = "text";
+      ai.className = "amt-input";
+      ai.inputMode = "numeric";
+      ai.placeholder = "0";
+      ai.autocomplete = "off";
+      ai.addEventListener("input", recalc);
+      tdA.appendChild(ai);
+      amtFields[r.key] = ai;
+    } else {
+      tdL.textContent = r.text;
+      tdA.className = "amt calc-cell";
+      tdA.textContent = "\u2014";
+      calcCells[r.calc] = tdA;
+    }
+    tr.className = cls.join(" ");
+    tr.appendChild(tdL);
+    tr.appendChild(tdA);
+    tbody.appendChild(tr);
+  });
+  card.appendChild(table);
+  var tieNote = h('<p class="tie-note" hidden></p>');
+  card.appendChild(tieNote);
+  wrap.appendChild(card);
+
+  function keysIn(sec) {
+    return built.fieldKeys.filter(function (f) { return f.sec === sec; }).map(function (f) { return f.key; });
+  }
+  function val(k) { var v = parseAmt(amtFields[k].value); return isNaN(v) ? 0 : v; }
+  function sumSec(sec) { return keysIn(sec).reduce(function (t, k) { return t + val(k); }, 0); }
+  function filled(secs) {
+    return secs.some(function (sec) { return keysIn(sec).some(function (k) { return amtFields[k].value.trim() !== ""; }); });
+  }
+
+  function recalc() {
+    var tca = sumSec("ca"), ta = tca + sumSec("nca");
+    var tcl = sumSec("cl"), tl = tcl + sumSec("ncl");
+    var te = sumSec("eq"), tle = tl + te;
+    var set = function (name, v, show) { if (calcCells[name]) calcCells[name].textContent = show ? fmt(v) : "\u2014"; };
+    set("tca", tca, filled(["ca"]));
+    set("ta", ta, filled(["ca", "nca"]));
+    set("tcl", tcl, filled(["cl"]));
+    set("tl", tl, filled(["cl", "ncl"]));
+    set("te", te, filled(["eq"]));
+    set("tle", tle, filled(["cl", "ncl", "eq"]));
+    var ready = filled(["ca", "nca"]) && filled(["cl", "ncl", "eq"]);
+    ["ta", "tle"].forEach(function (n) { calcCells[n].classList.remove("tie", "notie"); });
+    if (ready) {
+      var balanced = ta === tle;
+      ["ta", "tle"].forEach(function (n) { calcCells[n].classList.add(balanced ? "tie" : "notie"); });
+      tieNote.hidden = false;
+      tieNote.className = "tie-note " + (balanced ? "ok" : "bad");
+      tieNote.textContent = balanced
+        ? "Balanced. Total assets equal total liabilities and stockholders' equity."
+        : "Not balanced. Total assets are " + fmt(ta) + " but liabilities plus equity come to " + fmt(tle) + ", a difference of " + fmt(Math.abs(ta - tle)) + ".";
+    } else {
+      tieNote.hidden = true;
+    }
+  }
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var scoreLbl = h('<div class="topbar-label"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
+
+  checkBtn.addEventListener("click", function () {
+    var right = 0, total = 0;
+    ["ca", "nca", "cl", "ncl", "eq"].forEach(function (sec) {
+      var keyRows = built.fieldKeys.filter(function (f) { return f.sec === sec; }).map(function (f) { return f.row; });
+      var claimed = [];
+      keysIn(sec).forEach(function (k) {
+        total += 2;
+        var lf = lblFields[k], af = amtFields[k];
+        // an account name is right if it belongs in this section and has not been used already
+        var hit = null;
+        for (var i = 0; i < keyRows.length; i++) {
+          if (claimed.indexOf(i) !== -1) continue;
+          var ok = isDrop ? (lf.value === keyRows[i].label) : matchText(lf.value, keyRows[i].alias);
+          if (ok) { hit = i; break; }
+        }
+        var lblOk = hit !== null;
+        if (lblOk) claimed.push(hit);
+        lf.classList.remove("right", "wrong");
+        lf.classList.add(lblOk ? "right" : "wrong");
+        if (lblOk) right++;
+        // the amount is graded against whatever account they named on that line
+        var amtOk = lblOk && parseAmt(af.value) === keyRows[hit].amt;
+        af.classList.remove("right", "wrong");
+        af.classList.add(amtOk ? "right" : "wrong");
+        if (amtOk) right++;
+      });
+    });
+    scoreLbl.textContent = right + " of " + total + " boxes correct";
+
+    var order = function (sec) {
+      return built.fieldKeys.filter(function (f) { return f.sec === sec; })
+        .map(function (f) { return f.row.label + " " + fmt(f.row.amt); }).join(", ");
+    };
+    var existing = wrap.querySelector(".review");
+    if (existing) existing.remove();
+    var key = h('<div class="review" style="margin-top:26px"></div>');
+    key.appendChild(h('<h3 class="review-heading">Answer key</h3>'));
+    key.appendChild(h('<div class="review-item">' +
+      '<p class="review-correct">Current assets (' + fmt(prob.tca) + "): " + escapeHtml(order("ca")) + "</p>" +
+      '<p class="review-correct">Noncurrent assets: ' + escapeHtml(order("nca")) + "</p>" +
+      '<p class="review-correct">Total assets: ' + fmt(prob.ta) + "</p>" +
+      '<p class="review-correct">Current liabilities (' + fmt(prob.tcl) + "): " + escapeHtml(order("cl")) + "</p>" +
+      '<p class="review-correct">Noncurrent liabilities: ' + escapeHtml(order("ncl")) + "</p>" +
+      '<p class="review-correct">Total liabilities: ' + fmt(prob.tl) + "</p>" +
+      '<p class="review-correct">Stockholders\' equity (' + fmt(prob.te) + "): " + escapeHtml(order("eq")) + "</p>" +
+      '<p class="review-explain">' +
+      (prob.hidePlug
+        ? "Retained earnings is the plug: rearrange Assets = Liabilities + Equity to get retained earnings = total assets minus total liabilities minus common stock and additional paid-in capital, so " + fmt(prob.ta) + " minus " + fmt(prob.tl) + " minus " + fmt(prob.te - prob.re) + " equals " + fmt(prob.re) + ". "
+        : "Every amount was given, so the work here is classification: current means it converts to cash or comes due within one year or the operating cycle. ") +
+      "Current assets are listed in order of liquidity and current liabilities in order of maturity, which is the order shown above. Your line order is not graded, only whether each account landed in the right section with the right amount.</p></div>"));
+    wrap.appendChild(key);
+    scrollTop();
+  });
+
+  var newNums = h('<button type="button" class="link-btn">New numbers</button>');
+  newNums.addEventListener("click", function () { startStatement(mode); });
+  sb.appendChild(scoreLbl);
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(newNums);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+
+/* ---------- income statement builder ---------- */
+var IS_ROWS = [
+  { t: "in", key: "sales", label: "Net sales", alias: ["net sales", "sales", "sales revenue", "net revenues", "net revenue", "revenues", "revenue"] },
+  { t: "in", key: "cogs", label: "Cost of goods sold", alias: ["cost of goods sold", "cogs", "cost of sales", "cost of goods"] },
+  { t: "calc", calc: "gross", text: "Gross profit", cls: "total" },
+  { t: "in", key: "sga", label: "Selling, general, administrative expenses", alias: ["selling general administrative expenses", "selling general and administrative expenses", "sga", "sg a", "selling general and administrative", "operating expenses", "selling general administrative"] },
+  { t: "calc", calc: "op", text: "Operating income", cls: "total" },
+  { t: "in", key: "interest", label: "Interest expense", alias: ["interest expense", "interest"] },
+  { t: "calc", calc: "net", text: "Net income", cls: "grand" }
+];
+
+var IS_LABEL_POOL = [
+  "Net sales", "Cost of goods sold", "Selling, general, administrative expenses", "Interest expense",
+  "Gross profit", "Operating income", "Net income", "Accounts payable", "Inventory",
+  "Retained earnings", "Cash", "Dividends paid"
+];
+
+function makeIncomeStatement(hideCogs) {
+  var sales, cogs, sga, interest, gross, op, net, tries = 0;
+  do {
+    sales = rnd(6000, 120000, 1);
+    cogs = Math.round(sales * (rnd(52, 78, 1) / 100));
+    sga = Math.round(sales * (rnd(11, 28, 1) / 100));
+    interest = rnd(20, Math.max(40, Math.round(sales * 0.02)), 1);
+    gross = sales - cogs;
+    op = gross - sga;
+    net = op - interest;
+    tries++;
+  } while ((net === 0 || net > sales * 0.3 || net < -sales * 0.09) && tries < 500);
+
+  var facts = hideCogs
+    ? [["Net sales", sales], ["Gross profit", gross], ["Selling, general, administrative expenses", sga], ["Interest expense", interest]]
+    : [["Net sales", sales], ["Cost of goods sold", cogs], ["Selling, general, administrative expenses", sga], ["Interest expense", interest]];
+
+  return {
+    company: pick(BANK.companies),
+    date: pick(BANK.dates),
+    hideCogs: !!hideCogs,
+    facts: shuffle(facts),
+    keys: { sales: sales, cogs: cogs, sga: sga, interest: interest, gross: gross, op: op, net: net }
+  };
+}
+
+function startIncome(mode) {
+  var isDrop = mode.variant === "dropdown";
+  var prob = makeIncomeStatement(false);
+  var wrap = document.createElement("div");
+
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">' + (isDrop ? "Dropdown account names" : "Everything blank") + "</div>"));
+  wrap.appendChild(bar);
+
+  var factList = prob.facts.map(function (f) {
+    return "<li>" + escapeHtml(f[0]) + ", $" + fmt(f[1]) + "</li>";
+  }).join("");
+  var ask = "Build the income statement below" + (isDrop ? " using the dropdowns" : ", typing each account name yourself") +
+    ". The figures above are in no particular order. Gross profit, operating income, and net income are subtotals, so they calculate themselves as you type.";
+  wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
+    '<p class="ask" style="margin-top:0;margin-bottom:11px">For the year ended ' + escapeHtml(prob.date) + ", in millions:</p>" +
+    "<ul>" + factList + "</ul><p class=\"ask\">" + ask + "</p></div>"));
+
+  var card = h('<div class="exam-card" style="padding-top:0"></div>');
+  card.appendChild(h('<div class="stmt-head">' + escapeHtml(prob.company) + "<span>Income Statement</span><span>For the Year Ended " + escapeHtml(prob.date) + "</span></div>"));
+  var table = h('<table class="stmt-table"><tbody></tbody></table>');
+  var tbody = table.querySelector("tbody");
+  var amtFields = {}, lblFields = {}, calcCells = {};
+
+  IS_ROWS.forEach(function (r) {
+    var tr = document.createElement("tr");
+    var cls = [];
+    if (r.cls) cls.push(r.cls);
+    var tdL = document.createElement("td");
+    tdL.className = "lbl";
+    var tdA = document.createElement("td");
+    tdA.className = "amt";
+    if (r.t === "in") {
+      if (isDrop) {
+        var sel = document.createElement("select");
+        sel.className = "lbl-select";
+        sel.innerHTML = '<option value="">Select account</option>' + shuffle(IS_LABEL_POOL).map(function (o) {
+          return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
+        }).join("");
+        tdL.appendChild(sel);
+        lblFields[r.key] = sel;
+      } else {
+        var li = document.createElement("input");
+        li.type = "text";
+        li.className = "lbl-input";
+        li.placeholder = "Account name";
+        li.autocomplete = "off";
+        li.spellcheck = false;
+        tdL.appendChild(li);
+        lblFields[r.key] = li;
+      }
+      var ai = document.createElement("input");
+      ai.type = "text";
+      ai.className = "amt-input";
+      ai.inputMode = "numeric";
+      ai.placeholder = "0";
+      ai.autocomplete = "off";
+      ai.addEventListener("input", recalc);
+      tdA.appendChild(ai);
+      amtFields[r.key] = ai;
+    } else {
+      tdL.textContent = r.text;
+      tdA.className = "amt calc-cell";
+      tdA.textContent = "\u2014";
+      calcCells[r.calc] = tdA;
+    }
+    tr.className = cls.join(" ");
+    tr.appendChild(tdL);
+    tr.appendChild(tdA);
+    tbody.appendChild(tr);
+  });
+  card.appendChild(table);
+  var note = h('<p class="tie-note" hidden></p>');
+  card.appendChild(note);
+  wrap.appendChild(card);
+
+  function val(k) { var v = parseAmt(amtFields[k].value); return isNaN(v) ? 0 : v; }
+  function any(keys) { return keys.some(function (k) { return amtFields[k].value.trim() !== ""; }); }
+
+  function recalc() {
+    var gross = val("sales") - val("cogs");
+    var op = gross - val("sga");
+    var net = op - val("interest");
+    calcCells.gross.textContent = any(["sales", "cogs"]) ? fmt(gross) : "\u2014";
+    calcCells.op.textContent = any(["sales", "cogs", "sga"]) ? fmt(op) : "\u2014";
+    calcCells.net.textContent = any(["sales", "cogs", "sga", "interest"]) ? fmt(net) : "\u2014";
+    if (any(["sales", "cogs", "sga", "interest"])) {
+      note.hidden = false;
+      if (net < 0) {
+        note.className = "tie-note bad";
+        note.textContent = "That is a net loss of " + fmt(Math.abs(net)) + ". On an income statement a loss is shown in parentheses.";
+      } else {
+        note.className = "tie-note ok";
+        note.textContent = "Net income of " + fmt(net) + ". Revenues minus expenses, top to bottom.";
+      }
+    } else {
+      note.hidden = true;
+    }
+  }
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var scoreLbl = h('<div class="topbar-label"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
+  checkBtn.addEventListener("click", function () {
+    var right = 0, total = 0;
+    IS_ROWS.filter(function (r) { return r.t === "in"; }).forEach(function (r) {
+      total += 2;
+      var lf = lblFields[r.key], af = amtFields[r.key];
+      var lblOk = isDrop ? (lf.value === r.label) : matchText(lf.value, r.alias);
+      lf.classList.remove("right", "wrong");
+      lf.classList.add(lblOk ? "right" : "wrong");
+      if (lblOk) right++;
+      var amtOk = parseAmt(af.value) === prob.keys[r.key];
+      af.classList.remove("right", "wrong");
+      af.classList.add(amtOk ? "right" : "wrong");
+      if (amtOk) right++;
+    });
+    scoreLbl.textContent = right + " of " + total + " boxes correct";
+    var existing = wrap.querySelector(".review");
+    if (existing) existing.remove();
+    var key = h('<div class="review" style="margin-top:26px"></div>');
+    key.appendChild(h('<h3 class="review-heading">Answer key</h3>'));
+    key.appendChild(h('<div class="review-item">' +
+      '<p class="review-correct">Net sales ' + fmt(prob.keys.sales) + " minus cost of goods sold " + fmt(prob.keys.cogs) + " equals gross profit " + fmt(prob.keys.gross) + "</p>" +
+      '<p class="review-correct">Gross profit minus SG and A of ' + fmt(prob.keys.sga) + " equals operating income " + fmt(prob.keys.op) + "</p>" +
+      '<p class="review-correct">Operating income minus interest expense of ' + fmt(prob.keys.interest) + " equals net income " + fmt(prob.keys.net) + "</p>" +
+      '<p class="review-explain">' +
+      "Interest expense sits below operating income because it is a nonoperating item, tied to how the company is financed rather than to selling the product. That is why operating income and net income are different numbers.</p></div>"));
+    wrap.appendChild(key);
+    scrollTop();
+  });
+  var newNums = h('<button type="button" class="link-btn">New numbers</button>');
+  newNums.addEventListener("click", function () { startIncome(mode); });
+  sb.appendChild(scoreLbl);
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(newNums);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+
+/* ---------- statement of cash flows builder ---------- */
+var CF_ROWS = [
+  { t: "in", key: "ops", label: "Net cash flows from operations", alias: ["net cash flows from operations", "net cash flow from operations", "cash flows from operations", "cash flow from operations", "net cash from operations", "cash from operations", "operating activities", "net cash flows from operating activities", "operations"] },
+  { t: "in", key: "inv", label: "Net cash flows from investing", alias: ["net cash flows from investing", "net cash flow from investing", "cash flows from investing", "cash flow from investing", "net cash from investing", "cash from investing", "investing activities", "net cash flows from investing activities", "investing"] },
+  { t: "in", key: "fin", label: "Net cash flows from financing", alias: ["net cash flows from financing", "net cash flow from financing", "cash flows from financing", "cash flow from financing", "net cash from financing", "cash from financing", "financing activities", "net cash flows from financing activities", "financing"] },
+  { t: "in", key: "fx", label: "Effect of exchange rates on cash", alias: ["effect of exchange rates on cash", "effect of exchange rates", "effect of exchange rate changes on cash", "exchange rate effect", "effect of foreign exchange rates on cash", "foreign exchange effect", "exchange rates"] },
+  { t: "calc", calc: "change", text: "Net change in cash", cls: "total" },
+  { t: "in", key: "begin", label: "Cash, beginning year", alias: ["cash beginning year", "cash beginning of year", "cash at beginning of year", "beginning cash", "cash beginning", "beginning cash balance"] },
+  { t: "calc", calc: "end", text: "Cash, ending year", cls: "grand" }
+];
+
+var CF_LABEL_POOL = [
+  "Net cash flows from operations", "Net cash flows from investing", "Net cash flows from financing",
+  "Effect of exchange rates on cash", "Cash, beginning year", "Net change in cash", "Cash, ending year",
+  "Net income", "Gross profit", "Retained earnings", "Total assets", "Accounts payable"
+];
+
+function makeCashFlow() {
+  var ops, inv, fin, fx, begin, change, end, tries = 0;
+  do {
+    ops = Math.random() < 0.9 ? rnd(600, 9000, 1) : -rnd(200, 1500, 1);
+    inv = -rnd(200, 6500, 1);
+    fin = Math.random() < 0.75 ? -rnd(150, 4500, 1) : rnd(150, 3500, 1);
+    fx = Math.random() < 0.5 ? -rnd(5, 320, 1) : rnd(5, 320, 1);
+    begin = rnd(250, 7000, 1);
+    change = ops + inv + fin + fx;
+    end = begin + change;
+    tries++;
+  } while ((end < 60 || Math.abs(change) < 40) && tries < 600);
+
+  return {
+    company: pick(BANK.companies),
+    date: pick(BANK.dates),
+    facts: shuffle([
+      ["Net cash flows from operations", ops],
+      ["Net cash flows from investing", inv],
+      ["Net cash flows from financing", fin],
+      ["Effect of exchange rates on cash", fx],
+      ["Cash, beginning year", begin]
+    ]),
+    keys: { ops: ops, inv: inv, fin: fin, fx: fx, begin: begin, change: change, end: end }
+  };
+}
+
+function startCashFlow(mode) {
+  var isDrop = mode.variant === "dropdown";
+  var prob = makeCashFlow();
+  var wrap = document.createElement("div");
+
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">' + (isDrop ? "Dropdown account names" : "Everything blank") + "</div>"));
+  wrap.appendChild(bar);
+
+  var factList = prob.facts.map(function (f) {
+    return "<li>" + escapeHtml(f[0]) + ", $" + fmt(f[1]) + "</li>";
+  }).join("");
+  wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
+    '<p class="ask" style="margin-top:0;margin-bottom:11px">For the year ended ' + escapeHtml(prob.date) + ", in millions:</p>" +
+    "<ul>" + factList + "</ul>" +
+    '<p class="ask">Build the statement of cash flows below' + (isDrop ? " using the dropdowns" : ", typing each line yourself") +
+    ". The figures above are in no particular order, and amounts in parentheses are cash going out. Net change in cash and ending cash calculate themselves as you type.</p></div>"));
+
+  var card = h('<div class="exam-card" style="padding-top:0"></div>');
+  card.appendChild(h('<div class="stmt-head">' + escapeHtml(prob.company) + "<span>Statement of Cash Flows</span><span>For the Year Ended " + escapeHtml(prob.date) + "</span></div>"));
+  var table = h('<table class="stmt-table"><tbody></tbody></table>');
+  var tbody = table.querySelector("tbody");
+  var amtFields = {}, lblFields = {}, calcCells = {};
+
+  CF_ROWS.forEach(function (r) {
+    var tr = document.createElement("tr");
+    if (r.cls) tr.className = r.cls;
+    var tdL = document.createElement("td");
+    tdL.className = "lbl";
+    var tdA = document.createElement("td");
+    tdA.className = "amt";
+    if (r.t === "in") {
+      if (isDrop) {
+        var sel = document.createElement("select");
+        sel.className = "lbl-select";
+        sel.innerHTML = '<option value="">Select line</option>' + shuffle(CF_LABEL_POOL).map(function (o) {
+          return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
+        }).join("");
+        tdL.appendChild(sel);
+        lblFields[r.key] = sel;
+      } else {
+        var li = document.createElement("input");
+        li.type = "text";
+        li.className = "lbl-input";
+        li.placeholder = "Line name";
+        li.autocomplete = "off";
+        li.spellcheck = false;
+        tdL.appendChild(li);
+        lblFields[r.key] = li;
+      }
+      var ai = document.createElement("input");
+      ai.type = "text";
+      ai.className = "amt-input";
+      ai.placeholder = "0";
+      ai.autocomplete = "off";
+      ai.addEventListener("input", recalc);
+      tdA.appendChild(ai);
+      amtFields[r.key] = ai;
+    } else {
+      tdL.textContent = r.text;
+      tdA.className = "amt calc-cell";
+      tdA.textContent = "\u2014";
+      calcCells[r.calc] = tdA;
+    }
+    tr.appendChild(tdL);
+    tr.appendChild(tdA);
+    tbody.appendChild(tr);
+  });
+  card.appendChild(table);
+  var note = h('<p class="tie-note" hidden></p>');
+  card.appendChild(note);
+  wrap.appendChild(card);
+
+  function val(k) { var v = parseAmt(amtFields[k].value); return isNaN(v) ? 0 : v; }
+  function any(keys) { return keys.some(function (k) { return amtFields[k].value.trim() !== ""; }); }
+
+  function recalc() {
+    var change = val("ops") + val("inv") + val("fin") + val("fx");
+    var end = val("begin") + change;
+    calcCells.change.textContent = any(["ops", "inv", "fin", "fx"]) ? fmt(change) : "\u2014";
+    calcCells.end.textContent = any(["ops", "inv", "fin", "fx", "begin"]) ? fmt(end) : "\u2014";
+    if (any(["ops", "inv", "fin", "fx", "begin"])) {
+      note.hidden = false;
+      note.className = "tie-note " + (change >= 0 ? "ok" : "bad");
+      note.textContent = change >= 0
+        ? "Cash went up by " + fmt(change) + " over the year, ending at " + fmt(end) + "."
+        : "Cash went down by " + fmt(Math.abs(change)) + " over the year, ending at " + fmt(end) + ".";
+    } else {
+      note.hidden = true;
+    }
+  }
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var scoreLbl = h('<div class="topbar-label"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
+  checkBtn.addEventListener("click", function () {
+    var right = 0, total = 0;
+    CF_ROWS.filter(function (r) { return r.t === "in"; }).forEach(function (r) {
+      total += 2;
+      var lf = lblFields[r.key], af = amtFields[r.key];
+      var lblOk = isDrop ? (lf.value === r.label) : matchText(lf.value, r.alias);
+      lf.classList.remove("right", "wrong");
+      lf.classList.add(lblOk ? "right" : "wrong");
+      if (lblOk) right++;
+      var amtOk = parseAmt(af.value) === prob.keys[r.key];
+      af.classList.remove("right", "wrong");
+      af.classList.add(amtOk ? "right" : "wrong");
+      if (amtOk) right++;
+    });
+    scoreLbl.textContent = right + " of " + total + " boxes correct";
+    var existing = wrap.querySelector(".review");
+    if (existing) existing.remove();
+    var k = prob.keys;
+    var key = h('<div class="review" style="margin-top:26px"></div>');
+    key.appendChild(h('<h3 class="review-heading">Answer key</h3>'));
+    key.appendChild(h('<div class="review-item">' +
+      '<p class="review-correct">Operations ' + fmt(k.ops) + ", investing " + fmt(k.inv) + ", financing " + fmt(k.fin) + ", exchange rate effect " + fmt(k.fx) + "</p>" +
+      '<p class="review-correct">Net change in cash: ' + fmt(k.change) + "</p>" +
+      '<p class="review-correct">Cash, beginning year ' + fmt(k.begin) + " plus the net change equals cash, ending year " + fmt(k.end) + "</p>" +
+      '<p class="review-explain">The three activity sections are the same three business activities from Chapter 1, and added together with the exchange rate effect they explain every dollar of movement in the cash balance. ' +
+      "Investing is usually negative for a company that is buying assets, and financing is negative when a company is paying down debt or paying dividends. " +
+      "Ending cash is not a free-standing number: it has to equal the cash line on that year's balance sheet.</p></div>"));
+    wrap.appendChild(key);
+    scrollTop();
+  });
+  var newNums = h('<button type="button" class="link-btn">New numbers</button>');
+  newNums.addEventListener("click", function () { startCashFlow(mode); });
+  sb.appendChild(scoreLbl);
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(newNums);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+
+/* ---------- debit and credit rules drill ---------- */
+var DRCR_ROWS = [
+  { type: "Assets", inc: "Debit", dec: "Credit",
+    e: "Assets have a normal debit balance, so a debit increases them and a credit decreases them. Cash going up is always a debit to Cash." },
+  { type: "Liabilities", inc: "Credit", dec: "Debit",
+    e: "Liabilities sit on the other side of the accounting equation from assets, so they work the opposite way. Borrowing money credits the liability; paying it off debits it." },
+  { type: "Equity", inc: "Credit", dec: "Debit",
+    e: "Equity has a normal credit balance, same as liabilities, because both are claims on assets. Issuing stock credits equity; a dividend debits retained earnings." },
+  { type: "Revenues", inc: "Credit", dec: "Debit",
+    e: "Revenues increase equity, so they follow the equity rule: a credit increases revenue. This is why a sale credits Sales Revenue and debits Cash or Accounts Receivable." },
+  { type: "Expenses", inc: "Debit", dec: "Credit",
+    e: "Expenses reduce equity, so they behave opposite to equity: a debit increases an expense. Paying wages debits Wages Expense and credits Cash." }
+];
+
+function startDrCr(mode) {
+  var rows = shuffle(DRCR_ROWS);
+  var wrap = document.createElement("div");
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">10 boxes</div>'));
+  wrap.appendChild(bar);
+  wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">Debits and credits</p>' +
+    '<p class="intro-text">Debit just means the left side of an account and credit means the right side. Neither one means good or bad, and in every journal entry the two have to be equal. ' +
+    "For each account type below, pick whether an increase and a decrease is recorded as a debit or a credit.</p></div>"));
+
+  var card = h('<div class="exam-card"></div>');
+  var table = h('<table class="drill-table"><thead><tr><th>Account type</th><th>If it increases</th><th>If it decreases</th></tr></thead><tbody></tbody></table>');
+  var tbody = table.querySelector("tbody");
+  var cells = [];
+
+  rows.forEach(function (r) {
+    var tr = document.createElement("tr");
+    var td0 = document.createElement("td");
+    td0.innerHTML = "<strong>" + escapeHtml(r.type) + "</strong>";
+    var made = [];
+    ["inc", "dec"].forEach(function (which) {
+      var td = document.createElement("td");
+      var sel = document.createElement("select");
+      sel.className = "drill-select narrow";
+      sel.innerHTML = '<option value="">Pick one</option><option value="Debit">Debit</option><option value="Credit">Credit</option>';
+      td.appendChild(sel);
+      tr.appendChild(td);
+      made.push({ sel: sel, answer: r[which] });
+    });
+    tr.insertBefore(td0, tr.firstChild);
+    var noteTr = document.createElement("tr");
+    var noteTd = document.createElement("td");
+    noteTd.colSpan = 3;
+    noteTd.style.paddingTop = "0";
+    var note = h('<p class="row-note" hidden></p>');
+    noteTd.appendChild(note);
+    noteTr.appendChild(noteTd);
+    tbody.appendChild(tr);
+    tbody.appendChild(noteTr);
+    cells.push({ row: r, boxes: made, note: note });
+  });
+  card.appendChild(table);
+  wrap.appendChild(card);
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var scoreLbl = h('<div class="topbar-label"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check answers</span></button>');
+  checkBtn.addEventListener("click", function () {
+    var right = 0;
+    cells.forEach(function (c) {
+      var allRight = true;
+      c.boxes.forEach(function (b) {
+        var ok = b.sel.value === b.answer;
+        b.sel.classList.remove("right", "wrong");
+        b.sel.classList.add(ok ? "right" : "wrong");
+        if (ok) right++; else allRight = false;
+      });
+      c.note.hidden = false;
+      c.note.className = "row-note" + (allRight ? "" : " wrong");
+      c.note.textContent = (allRight ? "" : "Increase = " + c.row.inc + ", decrease = " + c.row.dec + ". ") + c.row.e;
+    });
+    scoreLbl.textContent = right + " of 10 correct";
+  });
+  var reshuffle = h('<button type="button" class="link-btn">Shuffle and retry</button>');
+  reshuffle.addEventListener("click", function () { startDrCr(mode); });
+  sb.appendChild(scoreLbl);
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(reshuffle);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+
+/* ---------- classifying items in financial statements ---------- */
+var CLASSIFY = {
+  options: ["B", "I", "SE", "B, I", "B, SE", "I, SE"],
+  multi: [
+    { label: "Common stock", ans: "B, SE", e: "The ending balance sits in the equity section of the balance sheet, and the statement of stockholders' equity shows how that balance changed during the year." },
+    { label: "Retained earnings (year end balance)", ans: "B, SE", e: "Retained earnings is an equity balance on the balance sheet, and the statement of stockholders' equity is where you see beginning balance plus net income minus dividends get you there." },
+    { label: "Net income", ans: "I, SE", e: "Net income is the bottom line of the income statement, and it then shows up as the addition to retained earnings on the statement of stockholders' equity. This is the link between the two statements." },
+    { label: "Total stockholders' equity", ans: "B, SE", e: "It is a balance sheet total and also the ending total on the statement of stockholders' equity." }
+  ],
+  b: [
+    { label: "Cash (year end balance)", e: "Cash is an asset, and assets are balance sheet items. Any account you can state a balance for at a point in time belongs on the balance sheet." },
+    { label: "Accounts payable", e: "Amounts owed to suppliers are a liability, so this is a balance sheet item." },
+    { label: "Inventory", e: "Unsold inventory is a current asset. Its cost only reaches the income statement as cost of goods sold once the goods are sold." },
+    { label: "Equipment", e: "Equipment is a long-term asset. Only the depreciation of it hits the income statement." },
+    { label: "Accounts receivable", e: "Amounts customers owe you are an asset, so this is a balance sheet item." },
+    { label: "Prepaid insurance", e: "Paying in advance buys a future benefit, which makes it an asset until it is used up." },
+    { label: "Notes payable", e: "A note payable is an obligation to a lender, so it is a liability on the balance sheet." },
+    { label: "Unearned revenue", e: "Despite the word revenue, cash collected before delivery is a liability, not income. It is a balance sheet item." },
+    { label: "Land", e: "Land is a long-term asset reported on the balance sheet." },
+    { label: "Accrued liabilities", e: "An obligation for an expense already recorded but not yet paid is a liability. The related expense is what appears on the income statement." },
+    { label: "Long-term debt", e: "Debt not due within a year is a noncurrent liability on the balance sheet." },
+    { label: "Marketable securities", e: "Short-term investments are a current asset on the balance sheet." },
+    { label: "Patents", e: "A patent is an intangible asset, reported on the balance sheet even though it has no physical substance." },
+    { label: "Supplies on hand", e: "Supplies not yet used are an asset. They become supplies expense as they get consumed." }
+  ],
+  i: [
+    { label: "Advertising expense", e: "Expenses are income statement items. They measure resources consumed during the period, not balances held at a point in time." },
+    { label: "Printing fees earned", e: "Fees earned is revenue, which belongs on the income statement." },
+    { label: "Wages expense", e: "An expense of the period, so it goes on the income statement. Any unpaid portion becomes an accrued liability on the balance sheet." },
+    { label: "Rent expense", e: "Rent used up during the period is an income statement expense." },
+    { label: "Sales revenue", e: "Revenue earned during the period is the top line of the income statement." },
+    { label: "Cost of goods sold", e: "The cost of inventory that was actually sold becomes an income statement expense, matched against the revenue it generated." },
+    { label: "Interest expense", e: "Interest is an expense of the period. It sits below operating income because it is nonoperating." },
+    { label: "Utilities expense", e: "A period expense on the income statement." },
+    { label: "Service fees earned", e: "Fees earned for services delivered is revenue, so it belongs on the income statement." },
+    { label: "Depreciation expense", e: "Depreciation is the portion of a long-term asset's cost used up this period, so it is an income statement expense." },
+    { label: "Interest revenue", e: "Interest earned is revenue on the income statement, reported as a nonoperating item." }
+  ],
+  se: [
+    { label: "Dividends", e: "Dividends are a distribution of profit to owners, not an expense, so they never touch the income statement. They appear on the statement of stockholders' equity as a reduction of retained earnings." },
+    { label: "Dividends declared during the year", e: "A dividend reduces retained earnings and shows up on the statement of stockholders' equity. It is not an expense, so it stays off the income statement." }
+  ]
+};
+
+function makeClassify() {
+  var multi = pick(CLASSIFY.multi);
+  var se = pick(CLASSIFY.se);
+  var nb = rnd(3, 4);
+  var bItems = shuffle(CLASSIFY.b).slice(0, nb).map(function (x) { return { label: x.label, ans: "B", e: x.e }; });
+  var iItems = shuffle(CLASSIFY.i).slice(0, 7 - nb - 1).map(function (x) { return { label: x.label, ans: "I", e: x.e }; });
+  var items = [{ label: multi.label, ans: multi.ans, e: multi.e }, { label: se.label, ans: "SE", e: se.e }]
+    .concat(bItems).concat(iItems);
+  return shuffle(items);
+}
+
+function startClassify(mode) {
+  var items = makeClassify();
+  var wrap = document.createElement("div");
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">8 items</div>'));
+  wrap.appendChild(bar);
+  wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">Where does it get reported</p>' +
+    '<p class="intro-text">For each item, pick whether it would most likely be reported on the balance sheet (B), the income statement (I), and/or the statement of stockholders\' equity (SE). ' +
+    "Exactly one item on this list is reported on more than one statement, so for that one pick the option naming both. New items every attempt.</p></div>"));
+
+  var card = h('<div class="exam-card"></div>');
+  var table = h('<table class="drill-table"><thead><tr><th>Item</th><th>Statement</th></tr></thead><tbody></tbody></table>');
+  var tbody = table.querySelector("tbody");
+  var cells = [];
+  items.forEach(function (it, i) {
+    var tr = document.createElement("tr");
+    var td1 = document.createElement("td");
+    td1.textContent = String.fromCharCode(97 + i) + ". " + it.label;
+    var td2 = document.createElement("td");
+    var sel = document.createElement("select");
+    sel.className = "drill-select narrow";
+    sel.innerHTML = '<option value="">Pick one</option>' + CLASSIFY.options.map(function (o) {
+      return '<option value="' + o + '">' + o + "</option>";
+    }).join("");
+    var note = h('<p class="row-note" hidden></p>');
+    td2.appendChild(sel);
+    td2.appendChild(note);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tbody.appendChild(tr);
+    cells.push({ sel: sel, note: note, item: it });
+  });
+  card.appendChild(table);
+  wrap.appendChild(card);
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var scoreLbl = h('<div class="topbar-label"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check answers</span></button>');
+  checkBtn.addEventListener("click", function () {
+    var right = 0;
+    cells.forEach(function (c) {
+      var ok = c.sel.value === c.item.ans;
+      c.sel.classList.remove("right", "wrong");
+      c.sel.classList.add(ok ? "right" : "wrong");
+      c.note.hidden = false;
+      c.note.className = "row-note" + (ok ? "" : " wrong");
+      c.note.textContent = (ok ? "" : c.item.ans + ". ") + c.item.e;
+      if (ok) right++;
+    });
+    scoreLbl.textContent = right + " of " + cells.length + " correct";
+  });
+  var again = h('<button type="button" class="link-btn">New items</button>');
+  again.addEventListener("click", function () { startClassify(mode); });
+  sb.appendChild(scoreLbl);
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(again);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+
+/* ---------- journal entry practice ---------- */
+var JE_ACCOUNTS = {
+  cash: { label: "Cash", alias: ["cash"] },
+  cs: { label: "Common stock", alias: ["common stock", "stock", "capital stock"] },
+  inv: { label: "Inventory", alias: ["inventory", "inventories", "merchandise inventory"] },
+  ap: { label: "Accounts payable", alias: ["accounts payable", "ap", "payables", "accounts payables"] },
+  ar: { label: "Accounts receivable", alias: ["accounts receivable", "ar", "receivables", "accounts receivables"] },
+  sales: { label: "Sales", alias: ["sales", "sales revenue", "revenue", "revenues"] },
+  cogs: { label: "Cost of goods sold", alias: ["cost of goods sold", "cogs", "cost of sales"] },
+  equip: { label: "Equipment", alias: ["equipment"] },
+  np: { label: "Notes payable", alias: ["notes payable", "note payable", "notes payables"] },
+  wages: { label: "Wages expense", alias: ["wages expense", "wage expense", "wages", "salaries expense"] },
+  re: { label: "Retained earnings", alias: ["retained earnings"] }
+};
+
+var JE_DISTRACTORS = ["Dividends", "Unearned revenue", "Prepaid insurance", "Interest expense", "Land", "Accrued liabilities", "Additional paid-in capital", "Supplies"];
+
+function makeJournal() {
+  var stock, inv, sale, equip, wages, div, endCash, tries = 0;
+  do {
+    stock = rnd(8, 30, 1) * 5000;
+    inv = rnd(6, 40, 1) * 500;
+    sale = Math.round(inv * (rnd(130, 195, 1) / 100) / 500) * 500;
+    equip = rnd(8, 40, 1) * 1000;
+    wages = rnd(3, 18, 1) * 500;
+    div = rnd(2, 20, 1) * 500;
+    endCash = stock + sale - wages - equip - div;
+    tries++;
+  } while ((sale <= inv || endCash < 5000) && tries < 500);
+
+  var A = JE_ACCOUNTS;
+  var entries = [
+    { text: "Receive $" + fmt(stock) + " cash in exchange for common stock.", dr: A.cash, cr: A.cs, amt: stock, memo: "To record stock issuance." },
+    { text: "Purchase $" + fmt(inv) + " of inventory on credit.", dr: A.inv, cr: A.ap, amt: inv, memo: "To record purchase of inventory." },
+    { text: "Sell inventory for $" + fmt(sale) + " on credit.", dr: A.ar, cr: A.sales, amt: sale, memo: "To record sale of inventory." },
+    { text: "Record $" + fmt(inv) + " for cost of inventory sold in transaction 3.", dr: A.cogs, cr: A.inv, amt: inv, memo: "To record cost of inventory sold." },
+    { text: "Collect $" + fmt(sale) + " cash from transaction 3.", dr: A.cash, cr: A.ar, amt: sale, memo: "To record cash collection." },
+    { text: "Acquire $" + fmt(equip) + " of equipment by signing a note.", dr: A.equip, cr: A.np, amt: equip, memo: "To record acquisition of equipment." },
+    { text: "Pay wages of $" + fmt(wages) + " in cash.", dr: A.wages, cr: A.cash, amt: wages, memo: "To record wage payment." },
+    { text: "Pay $" + fmt(equip) + " on a note payable that came due.", dr: A.np, cr: A.cash, amt: equip, memo: "To record payment of note payable." },
+    { text: "Pay $" + fmt(div) + " cash dividend.", dr: A.re, cr: A.cash, amt: div, memo: "To record payment of cash dividend." }
+  ];
+  return {
+    company: pick(BANK.companies),
+    entries: entries,
+    totals: entries.reduce(function (t, e) { return t + e.amt; }, 0),
+    nums: { stock: stock, inv: inv, sale: sale, equip: equip, wages: wages, div: div, endCash: endCash }
+  };
+}
+
+function startJournal(mode) {
+  var isDrop = mode.variant === "dropdown";
+  var prob = makeJournal();
+  var wrap = document.createElement("div");
+
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">9 entries</div>'));
+  wrap.appendChild(bar);
+
+  var txns = prob.entries.map(function (e, i) { return "<li>" + escapeHtml(e.text) + "</li>"; }).join("");
+  wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
+    '<p class="ask" style="margin-top:0;margin-bottom:11px">Record each transaction in the general journal below.</p>' +
+    '<ol class="txn-list">' + txns + "</ol>" +
+    '<p class="ask">Debit line first, credit line indented underneath' + (isDrop ? " (pick each account from the dropdown)" : " (type each account name yourself)") +
+    ". Put each amount in the correct column and leave the other column blank. Total debits and total credits at the bottom update as you type.</p></div>"));
+
+  var card = h('<div class="exam-card" style="padding-top:18px"></div>');
+  var table = h('<table class="je-table"><thead><tr><th>Ref</th><th>Description</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead><tbody></tbody></table>');
+  var tbody = table.querySelector("tbody");
+  var lines = [];
+
+  function acctField() {
+    if (isDrop) {
+      var sel = document.createElement("select");
+      sel.className = "je-acct-field";
+      var pool = [];
+      Object.keys(JE_ACCOUNTS).forEach(function (k) { pool.push(JE_ACCOUNTS[k].label); });
+      pool = pool.concat(JE_DISTRACTORS);
+      sel.innerHTML = '<option value="">Select account</option>' + shuffle(pool).map(function (o) {
+        return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
+      }).join("");
+      return sel;
+    }
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "je-acct-field";
+    inp.placeholder = "Account name";
+    inp.autocomplete = "off";
+    inp.spellcheck = false;
+    return inp;
+  }
+  function amtField() {
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "je-input";
+    inp.autocomplete = "off";
+    inp.addEventListener("input", recalc);
+    return inp;
+  }
+
+  prob.entries.forEach(function (e, i) {
+    ["dr", "cr"].forEach(function (side) {
+      var tr = document.createElement("tr");
+      if (side === "cr") tr.className = "cr-line";
+      var tdRef = document.createElement("td");
+      tdRef.className = "je-ref";
+      if (side === "dr") tdRef.textContent = "(" + (i + 1) + ")";
+      var tdAcct = document.createElement("td");
+      tdAcct.className = "je-acct";
+      var af = acctField();
+      tdAcct.appendChild(af);
+      var tdDr = document.createElement("td");
+      tdDr.className = "je-num";
+      var dIn = amtField();
+      tdDr.appendChild(dIn);
+      var tdCr = document.createElement("td");
+      tdCr.className = "je-num";
+      var cIn = amtField();
+      tdCr.appendChild(cIn);
+      tr.appendChild(tdRef); tr.appendChild(tdAcct); tr.appendChild(tdDr); tr.appendChild(tdCr);
+      tbody.appendChild(tr);
+      lines.push({ entry: e, side: side, acct: af, dr: dIn, cr: cIn });
+    });
+    var memoTr = document.createElement("tr");
+    memoTr.className = "memo-row";
+    var pad = document.createElement("td");
+    var memoTd = document.createElement("td");
+    memoTd.colSpan = 3;
+    memoTd.innerHTML = '<span class="je-memo">' + escapeHtml(e.memo) + "</span>";
+    memoTr.appendChild(pad); memoTr.appendChild(memoTd);
+    tbody.appendChild(memoTr);
+  });
+  card.appendChild(table);
+  var totals = h('<div class="je-totals"><div>Total debits <span id="td-val">0</span></div><div>Total credits <span id="tc-val">0</span></div></div>');
+  card.appendChild(totals);
+  var tieNote = h('<p class="tie-note" hidden></p>');
+  card.appendChild(tieNote);
+  wrap.appendChild(card);
+
+  function num(inp) { var v = parseAmt(inp.value); return isNaN(v) ? 0 : v; }
+  function recalc() {
+    var td = 0, tc = 0, any = false;
+    lines.forEach(function (l) {
+      td += num(l.dr); tc += num(l.cr);
+      if (l.dr.value.trim() !== "" || l.cr.value.trim() !== "") any = true;
+    });
+    totals.querySelector("#td-val").textContent = fmt(td);
+    totals.querySelector("#tc-val").textContent = fmt(tc);
+    if (!any) { tieNote.hidden = true; return; }
+    tieNote.hidden = false;
+    if (td === tc) {
+      tieNote.className = "tie-note ok";
+      tieNote.textContent = "Debits equal credits at " + fmt(td) + ". That has to be true in every journal entry and in the journal as a whole.";
+    } else {
+      tieNote.className = "tie-note bad";
+      tieNote.textContent = "Debits and credits do not agree: " + fmt(td) + " versus " + fmt(tc) + ", off by " + fmt(Math.abs(td - tc)) + ".";
+    }
+  }
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var scoreLbl = h('<div class="topbar-label"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
+  checkBtn.addEventListener("click", function () {
+    var right = 0, total = 0;
+    lines.forEach(function (l) {
+      var target = l.side === "dr" ? l.entry.dr : l.entry.cr;
+      total += 2;
+      var acctOk = isDrop ? (l.acct.value === target.label) : matchText(l.acct.value, target.alias);
+      l.acct.classList.remove("right", "wrong");
+      l.acct.classList.add(acctOk ? "right" : "wrong");
+      if (acctOk) right++;
+      // the amount has to be in the correct column, with the other column left empty
+      var filled = l.side === "dr" ? l.dr : l.cr;
+      var empty = l.side === "dr" ? l.cr : l.dr;
+      var emptyOk = empty.value.trim() === "" || parseAmt(empty.value) === 0;
+      var amtOk = parseAmt(filled.value) === l.entry.amt && emptyOk;
+      [l.dr, l.cr].forEach(function (f) { f.classList.remove("right", "wrong"); f.classList.add(amtOk ? "right" : "wrong"); });
+      if (amtOk) right++;
+    });
+    scoreLbl.textContent = right + " of " + total + " boxes correct";
+
+    var existing = wrap.querySelector(".review");
+    if (existing) existing.remove();
+    var key = h('<div class="review" style="margin-top:26px"></div>');
+    key.appendChild(h('<h3 class="review-heading">Answer key</h3>'));
+    var rowsHtml = prob.entries.map(function (e, i) {
+      return '<p class="review-correct">(' + (i + 1) + ") Dr " + escapeHtml(e.dr.label) + " " + fmt(e.amt) + ", Cr " + escapeHtml(e.cr.label) + " " + fmt(e.amt) + "</p>";
+    }).join("");
+    key.appendChild(h('<div class="review-item">' + rowsHtml +
+      '<p class="review-explain">Three things to watch on this problem. Entry 4 uses the same amount as entry 2 because all of the inventory purchased was sold, and entry 8 repays exactly what the note in entry 6 created, so those amounts are never independent. ' +
+      "The dividend in entry 9 debits Retained earnings, not a Dividends account, because that is how your slides record it, and a dividend is a distribution to owners rather than an expense. " +
+      "Debits total " + fmt(prob.totals) + " and credits total the same, which is the fastest check that you have not flipped a column somewhere.</p></div>"));
+    wrap.appendChild(key);
+    scrollTop();
+  });
+  var newNums = h('<button type="button" class="link-btn">New numbers</button>');
+  newNums.addEventListener("click", function () { startJournal(mode); });
+  sb.appendChild(scoreLbl);
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(newNums);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+
+/* ---------- transactions to financial statements ---------- */
+var TX_STUDIOS = ["Paulson Photography", "Kestrel Photography", "Marin Studio", "Brightline Studios", "Copperfield Photo", "Larkin Photography"];
+
+var TX_ACCTS = {
+  rev: { label: "Service revenue", alias: ["service revenue", "service revenues", "revenue", "revenues", "sales", "sales revenue", "fees earned", "service fees earned", "photo services revenue"] },
+  rent: { label: "Rent expense", alias: ["rent expense", "rent", "rental expense", "equipment rent expense"] },
+  misc: { label: "Miscellaneous expense", alias: ["miscellaneous expense", "miscellaneous expenses", "misc expense", "misc expenses", "miscellaneous"] },
+  loss: { label: "Loss on sale of land", alias: ["loss on sale of land", "loss on land sale", "loss on sale", "loss"] },
+  cash: { label: "Cash", alias: ["cash"] },
+  ar: { label: "Accounts receivable", alias: ["accounts receivable", "receivables", "ar", "accounts receivables"] },
+  land: { label: "Land", alias: ["land"] },
+  np: { label: "Notes payable", alias: ["notes payable", "note payable", "bank loan", "loan payable", "notes payables"] },
+  cs: { label: "Common stock", alias: ["common stock", "stock", "capital stock"] },
+  re: { label: "Retained earnings", alias: ["retained earnings"] }
+};
+
+var TX_DISTRACTORS = ["Dividends", "Equipment", "Prepaid rent", "Accounts payable", "Inventory", "Cost of goods sold", "Gain on sale of land", "Wages expense", "Unearned revenue"];
+
+function makeTransactions() {
+  var cs, np, land, rent, svcCash, svcAr, misc, parcelCost, parcelPrice, loss, div;
+  var rev, ni, re, cash, landLeft, ta, tries = 0;
+  do {
+    cs = rnd(8, 30, 1) * 1000;
+    np = rnd(4, 24, 1) * 500;
+    land = rnd(6, 20, 1) * 1000;
+    rent = rnd(4, 16, 1) * 500;
+    svcCash = rnd(8, 30, 1) * 1000;
+    svcAr = rnd(2, 12, 1) * 500;
+    misc = rnd(4, 16, 1) * 500;
+    parcelCost = Math.round(land * (rnd(25, 50, 1) / 100) / 500) * 500;
+    loss = rnd(1, 8, 1) * 100;
+    parcelPrice = parcelCost - loss;
+    div = rnd(2, 16, 1) * 500;
+    rev = svcCash + svcAr;
+    ni = rev - rent - misc - loss;
+    re = ni - div;
+    cash = cs + np - land - rent + svcCash - misc + parcelPrice - div;
+    landLeft = land - parcelCost;
+    ta = cash + svcAr + landLeft;
+    tries++;
+  } while ((cash < 1500 || ni < 1200 || re < 500 || parcelCost < 1000 || landLeft < 1500) && tries < 900);
+
+  var A = TX_ACCTS;
+  return {
+    company: pick(TX_STUDIOS),
+    date: pick(BANK.dates),
+    txns: [
+      "Collected $" + fmt(cs) + " in cash from shareholders.",
+      "Borrowed $" + fmt(np) + " from a bank.",
+      "Purchased two parcels of land for a total of $" + fmt(land) + ".",
+      "Paid $" + fmt(rent) + " cash to rent camera equipment for the remainder of the year.",
+      "Sold photo services to customers, receiving $" + fmt(svcCash) + " in cash and $" + fmt(svcAr) + " in receivables.",
+      "Paid miscellaneous expenses of $" + fmt(misc) + ".",
+      "Sold one parcel of land with a cost of $" + fmt(parcelCost) + " for $" + fmt(parcelPrice) + ".",
+      "Paid a $" + fmt(div) + " dividend to shareholders."
+    ],
+    keys: {
+      rev: { a: A.rev, v: rev }, rent: { a: A.rent, v: rent }, misc: { a: A.misc, v: misc }, loss: { a: A.loss, v: loss },
+      cash: { a: A.cash, v: cash }, ar: { a: A.ar, v: svcAr }, land: { a: A.land, v: landLeft },
+      np: { a: A.np, v: np }, cs: { a: A.cs, v: cs }, re: { a: A.re, v: re }
+    },
+    n: { cs: cs, np: np, land: land, rent: rent, svcCash: svcCash, svcAr: svcAr, misc: misc,
+         parcelCost: parcelCost, parcelPrice: parcelPrice, loss: loss, div: div,
+         rev: rev, ni: ni, re: re, cash: cash, landLeft: landLeft, ta: ta }
+  };
+}
+
+function startTransactions(mode) {
+  var isDrop = mode.variant === "dropdown";
+  var prob = makeTransactions();
+  var K = prob.keys;
+  var wrap = document.createElement("div");
+
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">' + (isDrop ? "Dropdown account names" : "Everything blank") + "</div>"));
+  wrap.appendChild(bar);
+
+  wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
+    '<p class="ask" style="margin-top:0;margin-bottom:11px">Entered into the following transactions during the first year of its operations:</p>' +
+    '<ol class="txn-list">' + prob.txns.map(function (t) { return "<li>" + escapeHtml(t) + "</li>"; }).join("") + "</ol>" +
+    '<p class="ask">Prepare the income statement and the year-end balance sheet. Do the income statement first: retained earnings on the balance sheet needs net income, and this is the company\'s first year, so retained earnings starts at zero.</p></div>'));
+
+  var groups = {
+    rev: [K.rev], exp: [K.rent, K.misc, K.loss],
+    asset: [K.cash, K.ar, K.land], liab: [K.np], eq: [K.cs, K.re]
+  };
+  var amtFields = {}, lblFields = {}, calcCells = {}, rowGroup = {};
+
+  var labelPool = [];
+  Object.keys(TX_ACCTS).forEach(function (k) { labelPool.push(TX_ACCTS[k].label); });
+  labelPool = labelPool.concat(TX_DISTRACTORS);
+
+  function buildTable(rows) {
+    var table = h('<table class="stmt-table"><tbody></tbody></table>');
+    var tbody = table.querySelector("tbody");
+    rows.forEach(function (r) {
+      var tr = document.createElement("tr");
+      var cls = [];
+      if (r.indent) cls.push("indent");
+      if (r.cls) cls.push(r.cls);
+      var tdL = document.createElement("td");
+      tdL.className = "lbl";
+      var tdA = document.createElement("td");
+      tdA.className = "amt";
+      if (r.t === "head") {
+        cls.push("head-row");
+        tdL.textContent = r.text;
+      } else if (r.t === "in") {
+        if (isDrop) {
+          var sel = document.createElement("select");
+          sel.className = "lbl-select";
+          sel.innerHTML = '<option value="">Select account</option>' + shuffle(labelPool).map(function (o) {
+            return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
+          }).join("");
+          tdL.appendChild(sel);
+          lblFields[r.key] = sel;
+        } else {
+          var li = document.createElement("input");
+          li.type = "text";
+          li.className = "lbl-input";
+          li.placeholder = "Account name";
+          li.autocomplete = "off";
+          li.spellcheck = false;
+          tdL.appendChild(li);
+          lblFields[r.key] = li;
+        }
+        var ai = document.createElement("input");
+        ai.type = "text";
+        ai.className = "amt-input";
+        ai.placeholder = "0";
+        ai.autocomplete = "off";
+        ai.addEventListener("input", recalc);
+        tdA.appendChild(ai);
+        amtFields[r.key] = ai;
+        rowGroup[r.key] = r.grp;
+      } else {
+        tdL.textContent = r.text;
+        tdA.className = "amt calc-cell";
+        tdA.textContent = "\u2014";
+        calcCells[r.calc] = tdA;
+      }
+      tr.className = cls.join(" ");
+      tr.appendChild(tdL);
+      tr.appendChild(tdA);
+      tbody.appendChild(tr);
+    });
+    return table;
+  }
+
+  var isCard = h('<div class="exam-card" style="padding-top:0;margin-bottom:26px"></div>');
+  isCard.appendChild(h('<div class="stmt-head">' + escapeHtml(prob.company) + "<span>Income Statement</span><span>For the Year Ended " + escapeHtml(prob.date) + "</span></div>"));
+  isCard.appendChild(buildTable([
+    { t: "in", key: "rev", grp: "rev" },
+    { t: "in", key: "e1", grp: "exp" },
+    { t: "in", key: "e2", grp: "exp" },
+    { t: "in", key: "e3", grp: "exp" },
+    { t: "calc", calc: "ni", text: "Net income", cls: "grand" }
+  ]));
+  var niNote = h('<p class="tie-note" hidden></p>');
+  isCard.appendChild(niNote);
+  wrap.appendChild(isCard);
+
+  var bsCard = h('<div class="exam-card" style="padding-top:0"></div>');
+  bsCard.appendChild(h('<div class="stmt-head">' + escapeHtml(prob.company) + "<span>Balance Sheet</span><span>" + escapeHtml(prob.date) + "</span></div>"));
+  bsCard.appendChild(buildTable([
+    { t: "head", text: "Assets" },
+    { t: "in", key: "a1", grp: "asset", indent: true },
+    { t: "in", key: "a2", grp: "asset", indent: true },
+    { t: "in", key: "a3", grp: "asset", indent: true },
+    { t: "calc", calc: "ta", text: "Total assets", cls: "grand" },
+    { t: "head", text: "Liabilities and stockholders' equity" },
+    { t: "in", key: "l1", grp: "liab", indent: true },
+    { t: "in", key: "q1", grp: "eq", indent: true },
+    { t: "in", key: "q2", grp: "eq", indent: true },
+    { t: "calc", calc: "tle", text: "Total liabilities and stockholders' equity", cls: "grand" }
+  ]));
+  var tieNote = h('<p class="tie-note" hidden></p>');
+  bsCard.appendChild(tieNote);
+  wrap.appendChild(bsCard);
+
+  function val(k) { var v = parseAmt(amtFields[k].value); return isNaN(v) ? 0 : v; }
+  function filled(keys) { return keys.some(function (k) { return amtFields[k].value.trim() !== ""; }); }
+
+  function recalc() {
+    var ni = val("rev") - val("e1") - val("e2") - val("e3");
+    var ta = val("a1") + val("a2") + val("a3");
+    var tle = val("l1") + val("q1") + val("q2");
+    calcCells.ni.textContent = filled(["rev", "e1", "e2", "e3"]) ? fmt(ni) : "\u2014";
+    calcCells.ta.textContent = filled(["a1", "a2", "a3"]) ? fmt(ta) : "\u2014";
+    calcCells.tle.textContent = filled(["l1", "q1", "q2"]) ? fmt(tle) : "\u2014";
+    if (filled(["rev", "e1", "e2", "e3"])) {
+      niNote.hidden = false;
+      niNote.className = "tie-note " + (ni >= 0 ? "ok" : "bad");
+      niNote.textContent = ni >= 0
+        ? "Net income of " + fmt(ni) + ". Carry this into retained earnings below, less the dividend."
+        : "That is a net loss of " + fmt(Math.abs(ni)) + ".";
+    } else { niNote.hidden = true; }
+    ["ta", "tle"].forEach(function (n) { calcCells[n].classList.remove("tie", "notie"); });
+    if (filled(["a1", "a2", "a3"]) && filled(["l1", "q1", "q2"])) {
+      var bal = ta === tle;
+      ["ta", "tle"].forEach(function (n) { calcCells[n].classList.add(bal ? "tie" : "notie"); });
+      tieNote.hidden = false;
+      tieNote.className = "tie-note " + (bal ? "ok" : "bad");
+      tieNote.textContent = bal
+        ? "Balanced. Total assets equal total liabilities and stockholders' equity."
+        : "Not balanced. Assets are " + fmt(ta) + " but liabilities plus equity come to " + fmt(tle) + ", off by " + fmt(Math.abs(ta - tle)) + ".";
+    } else { tieNote.hidden = true; }
+  }
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var scoreLbl = h('<div class="topbar-label"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
+  checkBtn.addEventListener("click", function () {
+    var right = 0, total = 0;
+    var claimed = {};
+    Object.keys(groups).forEach(function (g) { claimed[g] = []; });
+    Object.keys(amtFields).forEach(function (k) {
+      var g = rowGroup[k], pool = groups[g];
+      total += 2;
+      var lf = lblFields[k], af = amtFields[k];
+      var hit = null;
+      for (var i = 0; i < pool.length; i++) {
+        if (claimed[g].indexOf(i) !== -1) continue;
+        var ok = isDrop ? (lf.value === pool[i].a.label) : matchText(lf.value, pool[i].a.alias);
+        if (ok) { hit = i; break; }
+      }
+      var lblOk = hit !== null;
+      if (lblOk) claimed[g].push(hit);
+      lf.classList.remove("right", "wrong");
+      lf.classList.add(lblOk ? "right" : "wrong");
+      if (lblOk) right++;
+      var amtOk = lblOk && parseAmt(af.value) === pool[hit].v;
+      af.classList.remove("right", "wrong");
+      af.classList.add(amtOk ? "right" : "wrong");
+      if (amtOk) right++;
+    });
+    scoreLbl.textContent = right + " of " + total + " boxes correct";
+
+    var n = prob.n;
+    var existing = wrap.querySelector(".review");
+    if (existing) existing.remove();
+    var key = h('<div class="review" style="margin-top:26px"></div>');
+    key.appendChild(h('<h3 class="review-heading">Answer key</h3>'));
+    key.appendChild(h('<div class="review-item">' +
+      '<p class="review-correct">Income statement: service revenue ' + fmt(n.rev) + " (cash " + fmt(n.svcCash) + " plus receivables " + fmt(n.svcAr) +
+      "), rent expense " + fmt(n.rent) + ", miscellaneous expense " + fmt(n.misc) + ", loss on sale of land " + fmt(n.loss) + ", net income " + fmt(n.ni) + "</p>" +
+      '<p class="review-correct">Retained earnings: net income ' + fmt(n.ni) + " minus the dividend of " + fmt(n.div) + " equals " + fmt(n.re) + ", starting from zero in year one</p>" +
+      '<p class="review-correct">Cash ' + fmt(n.cash) + " = " + fmt(n.cs) + " in + " + fmt(n.np) + " in - " + fmt(n.land) + " land - " + fmt(n.rent) +
+      " rent + " + fmt(n.svcCash) + " services - " + fmt(n.misc) + " misc + " + fmt(n.parcelPrice) + " parcel sale - " + fmt(n.div) + " dividend</p>" +
+      '<p class="review-correct">Balance sheet: cash ' + fmt(n.cash) + ", accounts receivable " + fmt(n.svcAr) + ", land " + fmt(n.landLeft) +
+      ", total assets " + fmt(n.ta) + "; notes payable " + fmt(n.np) + ", common stock " + fmt(n.cs) + ", retained earnings " + fmt(n.re) + "</p>" +
+      '<p class="review-explain">Four places this problem tries to catch you. The receivable is revenue the moment the service is delivered, so revenue is ' + fmt(n.rev) +
+      " even though only " + fmt(n.svcCash) + " came in as cash. Renting the camera equipment for the remainder of the year means it is fully used up, so it is rent expense, not equipment and not prepaid rent. " +
+      "Land drops to " + fmt(n.landLeft) + " because one parcel costing " + fmt(n.parcelCost) + " is gone, and selling it for " + fmt(n.parcelPrice) +
+      " creates a loss of " + fmt(n.loss) + " on the income statement rather than revenue. " +
+      "And the dividend of " + fmt(n.div) + " never touches the income statement: it reduces retained earnings, which is why net income and retained earnings are different numbers.</p></div>"));
+    wrap.appendChild(key);
+    scrollTop();
+  });
+  var newNums = h('<button type="button" class="link-btn">New numbers</button>');
+  newNums.addEventListener("click", function () { startTransactions(mode); });
+  sb.appendChild(scoreLbl);
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(newNums);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+showHome();
+})();
+</script>
+</body>
+</html>
