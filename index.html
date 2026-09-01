@@ -351,6 +351,23 @@ input, select { font-family: inherit; }
 .score-split { font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; line-height: 1.6; }
 .score-split strong { color: var(--ink); }
 
+/* equations quiz */
+.eq-block { padding: 16px 0 15px; border-bottom: 1px solid var(--card-border); }
+.eq-block:last-of-type { border-bottom: none; }
+.eq-name { font-family: 'Spectral', serif; font-weight: 700; font-size: 16px; margin-bottom: 11px; }
+.eq-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.eq-op { font-family: 'Spectral', serif; font-weight: 700; font-size: 19px; color: var(--red); padding: 0 1px; }
+.eq-select {
+  min-width: 168px; padding: 8px 9px; font-size: 14.5px; color: var(--ink);
+  background: #FFFFFF; border: 1.5px solid var(--card-border); border-radius: 4px; cursor: pointer;
+  transition: border-color .14s ease, background .14s ease;
+}
+.eq-select:hover { border-color: var(--gold); }
+.eq-select:focus { outline: none; border-color: var(--red); }
+.eq-select.right { border-color: var(--green); background: var(--green-bg); }
+.eq-select.wrong { border-color: var(--red); background: var(--red-bg); }
+@media (max-width: 640px) { .eq-select { min-width: 0; flex: 1 1 128px; font-size: 13.5px; } }
+
 /* results */
 .results-card {
   background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
@@ -693,6 +710,7 @@ var MODES = [
   { id: "match",  group: "Chapter 1",  name: "Definition Matching Drill", meta: "10 terms from the homework", kind: "match", tag: "dropdown" },
   { id: "ch2mc",  group: "Chapter 2",  name: "Ch. 2 Definitions and Concepts", meta: "32 questions", kind: "quiz", bank: "ch2mc", type: "mc", tag: "multiple choice" },
   { id: "ch2fib", group: "Chapter 2",  name: "Ch. 2 Definitions and Concepts", meta: "30 questions", kind: "quiz", bank: "ch2fib", type: "fib", tag: "fill in the blank" },
+  { id: "eqquiz", group: "Statements Equations Quiz", name: "The Three Statement Equations", meta: "Balance sheet, income statement, stockholders' equity", kind: "eq", tag: "dropdown" },
   { id: "bsdrop", group: "Balance Sheet", name: "Balance Sheet Practice", meta: "Classified balance sheet, new numbers each time", kind: "stmt", variant: "dropdown", tag: "dropdown" },
   { id: "bsblank",group: "Balance Sheet", name: "Balance Sheet Practice", meta: "New numbers each time, plus solve for retained earnings", kind: "stmt", variant: "blank", tag: "fill in the blank" },
   { id: "isdrop", group: "Income Statement", name: "Income Statement Practice", meta: "New numbers each time", kind: "income", variant: "dropdown", tag: "dropdown" },
@@ -746,6 +764,7 @@ function launch(mode) {
   else if (mode.kind === "income") startIncome(mode);
   else if (mode.kind === "cash") startCashFlow(mode);
   else if (mode.kind === "drcr") startDrCr(mode);
+  else if (mode.kind === "eq") startEquations(mode);
   else if (mode.kind === "classify") startClassify(mode);
   else if (mode.kind === "journal") startJournal(mode);
   else if (mode.kind === "tx") startTransactions(mode);
@@ -2720,6 +2739,118 @@ function startTransactions(mode) {
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
   nav.appendChild(newNums);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+
+/* ---------- the three statement equations ---------- */
+var EQ_OPTIONS = ["Assets", "Liabilities", "Equity", "Revenues", "Expenses", "Common stock", "Retained earnings", "Dividends", "Net income", "Cash"];
+
+var EQ_ITEMS = [
+  {
+    name: "Balance sheet",
+    slots: [
+      { answer: "Assets" },
+      { op: "=", answer: "Liabilities", pair: "bs" },
+      { op: "+", answer: "Equity", pair: "bs" }
+    ],
+    e: "Everything the company owns had to be funded by somebody, either a creditor or an owner, so the two sides always equal. Liabilities are the nonowner claims on the assets and equity is the owner claim. Order does not matter across the plus sign."
+  },
+  {
+    name: "Income statement",
+    slots: [
+      { answer: "Revenues" },
+      { op: "\u2212", answer: "Expenses" }
+    ],
+    e: "Revenues minus expenses gives net income, or a net loss if expenses are larger. Order matters here: subtraction only runs one direction, and dividends are never part of it because they are a distribution to owners, not an expense."
+  },
+  {
+    name: "Statement of stockholders' equity",
+    slots: [
+      { answer: "Common stock" },
+      { op: "+", answer: "Retained earnings", pair: "se" }
+    ],
+    e: "Equity has exactly two pieces: common stock, the contributed capital owners paid in, and retained earnings, the earned capital the company generated itself. Retained earnings is where dividends land, which is why a dividend shows up on this statement and never on the income statement."
+  }
+];
+
+function startEquations(mode) {
+  var items = shuffle(EQ_ITEMS);
+  var wrap = document.createElement("div");
+
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">7 blanks</div>'));
+  wrap.appendChild(bar);
+  wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">The three equations</p>' +
+    '<p class="intro-text">Fill in each statement\'s equation. Where two terms are added together, either order counts. ' +
+    "These three sit under every problem on the exam, so it is worth being able to write them from memory.</p></div>"));
+
+  var card = h('<div class="exam-card"></div>');
+  var blocks = [];
+  items.forEach(function (item) {
+    var block = h('<div class="eq-block"></div>');
+    // the balance sheet line reads "Assets = ..." so its first slot needs no operator
+    block.appendChild(h('<p class="eq-name">' + escapeHtml(item.name) + "</p>"));
+    var row = h('<div class="eq-row"></div>');
+    var sels = [];
+    item.slots.forEach(function (slot) {
+      if (slot.op) row.appendChild(h('<span class="eq-op">' + slot.op + "</span>"));
+      var sel = document.createElement("select");
+      sel.className = "eq-select";
+      sel.innerHTML = '<option value="">Select</option>' + shuffle(EQ_OPTIONS).map(function (o) {
+        return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
+      }).join("");
+      row.appendChild(sel);
+      sels.push({ sel: sel, slot: slot });
+    });
+    block.appendChild(row);
+    var note = h('<p class="row-note" hidden style="margin-top:11px"></p>');
+    block.appendChild(note);
+    card.appendChild(block);
+    blocks.push({ item: item, sels: sels, note: note });
+  });
+  wrap.appendChild(card);
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var scoreLbl = h('<div class="topbar-label"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check answers</span></button>');
+  checkBtn.addEventListener("click", function () {
+    var right = 0, total = 0;
+    blocks.forEach(function (b) {
+      // terms joined by a plus sign are interchangeable, so grade those as a set
+      var pairAnswers = b.sels.filter(function (s) { return s.slot.pair; }).map(function (s) { return s.slot.answer; });
+      var claimed = [];
+      var allRight = true;
+      b.sels.forEach(function (s) {
+        total++;
+        var ok;
+        if (s.slot.pair) {
+          var idx = pairAnswers.indexOf(s.sel.value);
+          ok = idx !== -1 && claimed.indexOf(idx) === -1;
+          if (ok) claimed.push(idx);
+        } else {
+          ok = s.sel.value === s.slot.answer;
+        }
+        s.sel.classList.remove("right", "wrong");
+        s.sel.classList.add(ok ? "right" : "wrong");
+        if (ok) right++; else allRight = false;
+      });
+      b.note.hidden = false;
+      b.note.className = "row-note" + (allRight ? "" : " wrong");
+      var correct = b.item.slots.map(function (s, i) { return (i === 0 ? "" : s.op + " ") + s.answer; }).join(" ");
+      b.note.textContent = (allRight ? "" : b.item.name + " = " + correct + ". ") + b.item.e;
+    });
+    scoreLbl.textContent = right + " of " + total + " correct";
+  });
+  var again = h('<button type="button" class="link-btn">Shuffle and retry</button>');
+  again.addEventListener("click", function () { startEquations(mode); });
+  sb.appendChild(scoreLbl);
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(again);
   wrap.appendChild(nav);
   render(wrap);
 }
