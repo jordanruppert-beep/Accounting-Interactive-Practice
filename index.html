@@ -70,8 +70,8 @@ input, select { font-family: inherit; }
 .brand-text h1 { font-size: 27px; font-weight: 600; letter-spacing: -0.012em; }
 .brand-text p { margin-top: 6px; font-size: 14.5px; color: var(--ink-soft); max-width: 44ch; }
 .brand-text p.brand-by {
-  margin-top: 5px; font-family: 'Spectral', serif; font-style: italic;
-  font-size: 13.5px; color: var(--ink-faint);
+  margin-top: 9px; font-family: 'Spectral', serif; font-weight: 600;
+  font-size: 15.5px; color: var(--red); letter-spacing: 0.005em;
 }
 .header-rule {
   height: 1.5px; margin: 24px 0 30px;
@@ -343,6 +343,14 @@ input, select { font-family: inherit; }
   font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums;
 }
 
+.step-label {
+  font-family: 'Spectral', serif; font-weight: 700; font-size: 15px; color: var(--red);
+  margin: 0 0 11px; letter-spacing: 0.01em;
+}
+.step-label span { color: var(--ink-faint); font-weight: 400; font-size: 13.5px; font-family: 'Inter', sans-serif; }
+.score-split { font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; line-height: 1.6; }
+.score-split strong { color: var(--ink); }
+
 /* results */
 .results-card {
   background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
@@ -569,6 +577,21 @@ BANK.defmatch = {
 
 BANK.companies = ["Ridgeline Industries","Calder Manufacturing","Brightpath Retail","Northgate Foods","Summit Apparel","Halloran Logistics","Verdant Outdoor","Kessler Tools","Pinehurst Beverage","Ashford Electronics"];
 BANK.dates = ["December 31, 2025","June 30, 2025","May 31, 2025","September 30, 2025","January 31, 2026","March 31, 2026"];
+BANK.biz = [
+  { n: "Ridgeline Industries", d: "a regional building products distributor" },
+  { n: "Calder Manufacturing", d: "a maker of precision metal components" },
+  { n: "Brightpath Retail", d: "a chain of neighborhood hardware stores" },
+  { n: "Northgate Foods", d: "a packaged snack food producer" },
+  { n: "Summit Apparel", d: "an outdoor clothing brand" },
+  { n: "Halloran Logistics", d: "a regional freight and warehousing company" },
+  { n: "Verdant Outdoor", d: "a garden and patio furniture wholesaler" },
+  { n: "Kessler Tools", d: "a hand tool manufacturer" },
+  { n: "Pinehurst Beverage", d: "a craft soda bottler" },
+  { n: "Ashford Electronics", d: "a consumer audio equipment maker" },
+  { n: "Delacroix Bakery", d: "a wholesale bakery serving grocery chains" },
+  { n: "Talbot Marine Supply", d: "a boating and marine parts retailer" }
+];
+BANK.units = ["millions", "thousands"];
 (function () {
 "use strict";
 
@@ -603,11 +626,56 @@ function norm(s) {
     .replace(/[’']/g, "").replace(/[^a-z0-9]+/g, " ")
     .replace(/^the /, "").trim();
 }
+function editDistance(a, b) {
+  if (a === b) return 0;
+  var m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  if (Math.abs(m - n) > 4) return Math.abs(m - n);
+  var prev = [], cur = [], i, j;
+  for (j = 0; j <= n; j++) prev[j] = j;
+  for (i = 1; i <= m; i++) {
+    cur[0] = i;
+    for (j = 1; j <= n; j++) {
+      var cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+      cur[j] = Math.min(cur[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+    }
+    for (j = 0; j <= n; j++) prev[j] = cur[j];
+  }
+  return prev[n];
+}
+// how many typos to forgive, scaled to how long the answer is
+function typoTolerance(s) {
+  var n = s.replace(/ /g, "").length;
+  if (n <= 4) return 0;
+  if (n <= 7) return 1;
+  if (n <= 14) return 2;
+  return 3;
+}
+// distance from what they typed to the closest accepted spelling, or Infinity if nothing is close
+function aliasDistance(input, accepted) {
+  var n = norm(input), best = Infinity;
+  if (!n) return Infinity;
+  for (var i = 0; i < accepted.length; i++) {
+    var target = norm(accepted[i]);
+    if (n === target) return 0;
+    var d = editDistance(n, target);
+    if (d <= typoTolerance(target) && d < best) best = d;
+  }
+  return best;
+}
 function matchText(input, accepted) {
-  var n = norm(input);
-  if (!n) return false;
-  for (var i = 0; i < accepted.length; i++) { if (n === norm(accepted[i])) return true; }
-  return false;
+  return aliasDistance(input, accepted) !== Infinity;
+}
+// a typo only counts if it is closer to this answer than to any other account in the problem
+function matchExclusive(input, accepted, competitors) {
+  var d = aliasDistance(input, accepted);
+  if (d === Infinity) return false;
+  if (d === 0) return true;
+  for (var i = 0; i < competitors.length; i++) {
+    if (aliasDistance(input, competitors[i]) < d) return false;
+  }
+  return true;
 }
 function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function scrollTop() { try { window.scrollTo({ top: 0, behavior: "auto" }); } catch (e) {} }
@@ -888,60 +956,63 @@ function startMatch(mode) {
 var BS_ACCOUNTS = {
   ca: [
     { label: "Cash", alias: ["cash", "cash and equivalents", "cash and cash equivalents"], min: 600, max: 9000, always: true },
-    { label: "Marketable securities", alias: ["marketable securities", "short term investments", "short term investment"], min: 200, max: 3000 },
     { label: "Accounts receivable", alias: ["accounts receivable", "receivables", "ar", "accounts receivables"], min: 400, max: 6500, always: true },
-    { label: "Inventory", alias: ["inventory", "inventories"], min: 500, max: 8000, always: true },
-    { label: "Prepaid expenses", alias: ["prepaid expenses", "prepaid expense", "prepaids", "prepaid"], min: 90, max: 1400 }
-  ],
-  nca: [
-    { label: "Property, plant and equipment, net", alias: ["property plant and equipment net", "property plant and equipment", "ppe", "ppe net", "property plant equipment"], min: 3000, max: 30000, always: true },
-    { label: "Long-term investments", alias: ["long term investments", "long term investment", "long term financial investments"], min: 400, max: 6000 },
-    { label: "Intangible assets", alias: ["intangible assets", "intangibles", "intangible asset", "intangible and other assets"], min: 300, max: 5000 }
+    { label: "Inventory", alias: ["inventory", "inventories", "merchandise inventory"], min: 500, max: 8000, always: true },
+    { label: "Prepaid expenses", alias: ["prepaid expenses", "prepaid expense", "prepaids", "prepaid", "prepaid insurance"], min: 90, max: 1400 }
   ],
   cl: [
     { label: "Accounts payable", alias: ["accounts payable", "payables", "ap", "accounts payables"], min: 500, max: 7000, always: true },
-    { label: "Accrued liabilities", alias: ["accrued liabilities", "accrued liability", "accruals", "accrued expenses"], min: 200, max: 4000 },
-    { label: "Unearned revenue", alias: ["unearned revenue", "deferred revenue", "unearned revenues"], min: 100, max: 1800 },
-    { label: "Current maturities of long-term debt", alias: ["current maturities of long term debt", "current maturities", "current portion of long term debt", "current portion of debt"], min: 100, max: 2200 }
+    { label: "Wages payable", alias: ["wages payable", "wage payable", "salaries payable", "wages owed"], min: 100, max: 2200 },
+    { label: "Unearned revenue", alias: ["unearned revenue", "deferred revenue", "unearned revenues"], min: 100, max: 1800 }
   ],
   ncl: [
-    { label: "Long-term debt", alias: ["long term debt", "long term debts", "bonds payable", "notes payable long term"], min: 1500, max: 18000, always: true },
+    { label: "Long-term debt", alias: ["long term debt", "long term debts", "bonds payable", "long term notes payable"], min: 1500, max: 18000, always: true },
     { label: "Other long-term liabilities", alias: ["other long term liabilities", "other long term liability", "other noncurrent liabilities"], min: 300, max: 5000 }
   ],
   eq: [
-    { label: "Common stock", alias: ["common stock", "stock"], min: 20, max: 900, always: true },
-    { label: "Additional paid-in capital", alias: ["additional paid in capital", "apic", "paid in capital"], min: 800, max: 12000, always: true },
-    { label: "Retained earnings", alias: ["retained earnings", "retained earnings deficit"], plug: true, always: true }
+    { label: "Common stock", alias: ["common stock", "stock", "capital stock", "contributed capital"], min: 800, max: 14000, always: true },
+    { label: "Retained earnings", alias: ["retained earnings", "retained earnings deficit", "earned capital"], plug: true, always: true }
   ]
 };
 
-var BS_DISTRACTORS = ["Sales revenue", "Cost of goods sold", "Wages expense", "Dividends paid", "Net income"];
-
-var BS_SECTIONS = [
-  { id: "ca",  total: "tca", totalText: "Total current assets" },
-  { id: "nca", total: null },
-  { id: "cl",  total: "tcl", totalText: "Total current liabilities" },
-  { id: "ncl", total: null },
-  { id: "eq",  total: "te",  totalText: "Total stockholders' equity" }
+// two ways a company can present its long-lived assets; the scenario picks one
+var BS_NCA_PRESENTATIONS = [
+  [
+    { label: "Land", alias: ["land"], min: 1200, max: 12000 },
+    { label: "Equipment, net", alias: ["equipment net", "equipment", "equipment net of depreciation"], min: 2500, max: 22000 }
+  ],
+  [
+    { label: "Property, plant and equipment, net", alias: ["property plant and equipment net", "property plant and equipment", "ppe", "ppe net", "property plant equipment"], min: 3000, max: 30000 }
+  ],
+  [
+    { label: "Land", alias: ["land"], min: 1200, max: 12000 },
+    { label: "Buildings, net", alias: ["buildings net", "buildings", "building net", "buildings net of depreciation"], min: 3000, max: 24000 },
+    { label: "Equipment, net", alias: ["equipment net", "equipment", "equipment net of depreciation"], min: 2000, max: 16000 }
+  ]
 ];
+
+var BS_DISTRACTORS = ["Sales revenue", "Cost of goods sold", "Wages expense", "Dividends paid", "Net income", "Gross profit"];
 
 function chooseAccounts(list) {
   var always = list.filter(function (a) { return a.always; });
   var optional = list.filter(function (a) { return !a.always; });
   var take = optional.length ? rnd(optional.length > 1 ? 1 : 0, optional.length) : 0;
   var chosen = shuffle(optional).slice(0, take);
-  // keep the original declared order (liquidity for assets, maturity for liabilities)
   return list.filter(function (a) { return a.always || chosen.indexOf(a) !== -1; });
 }
 
 function makeBalanceSheet(hidePlug) {
   var p, tries = 0;
+  var nca = pick(BS_NCA_PRESENTATIONS);
   do {
     p = { sections: {} };
-    ["ca", "nca", "cl", "ncl", "eq"].forEach(function (sec) {
+    ["ca", "cl", "ncl", "eq"].forEach(function (sec) {
       p.sections[sec] = chooseAccounts(BS_ACCOUNTS[sec]).map(function (a) {
         return { label: a.label, alias: a.alias, plug: !!a.plug, amt: a.plug ? 0 : rnd(a.min, a.max, 1) };
       });
+    });
+    p.sections.nca = nca.map(function (a) {
+      return { label: a.label, alias: a.alias, plug: false, amt: rnd(a.min, a.max, 1) };
     });
     var sum = function (sec) { return p.sections[sec].reduce(function (t, r) { return t + r.amt; }, 0); };
     p.tca = sum("ca");
@@ -955,7 +1026,10 @@ function makeBalanceSheet(hidePlug) {
     tries++;
   } while ((p.re < -2200 || p.re > p.ta * 0.6 || p.tl > p.ta * 0.88 || p.tl < p.ta * 0.25) && tries < 600);
 
-  p.company = pick(BANK.companies);
+  var biz = pick(BANK.biz);
+  p.company = biz.n;
+  p.descr = biz.d;
+  p.unit = pick(BANK.units);
   p.date = pick(BANK.dates);
   p.hidePlug = !!hidePlug;
   var facts = [];
@@ -974,37 +1048,30 @@ function buildBsRows(p) {
   rows.push({ t: "head", text: "Assets" });
   ["ca", "nca"].forEach(function (sec) {
     p.sections[sec].forEach(function (r, i) {
-      var key = sec + i;
-      fieldKeys.push({ key: key, sec: sec, row: r });
-      rows.push({ t: "in", key: key, sec: sec, indent: true });
+      fieldKeys.push({ key: sec + i, sec: sec, row: r });
+      rows.push({ t: "in", key: sec + i, sec: sec, indent: true });
     });
-    var s = BS_SECTIONS.filter(function (x) { return x.id === sec; })[0];
-    if (s.total) rows.push({ t: "calc", calc: s.total, text: s.totalText, cls: "total", indent: true });
+    if (sec === "ca") rows.push({ t: "calc", calc: "tca", text: "Total current assets", cls: "total", indent: true });
   });
   rows.push({ t: "calc", calc: "ta", text: "Total assets", cls: "grand" });
   rows.push({ t: "head", text: "Liabilities and stockholders' equity" });
   ["cl", "ncl"].forEach(function (sec) {
     p.sections[sec].forEach(function (r, i) {
-      var key = sec + i;
-      fieldKeys.push({ key: key, sec: sec, row: r });
-      rows.push({ t: "in", key: key, sec: sec, indent: true });
+      fieldKeys.push({ key: sec + i, sec: sec, row: r });
+      rows.push({ t: "in", key: sec + i, sec: sec, indent: true });
     });
-    var s = BS_SECTIONS.filter(function (x) { return x.id === sec; })[0];
-    if (s.total) rows.push({ t: "calc", calc: s.total, text: s.totalText, cls: "total", indent: true });
+    if (sec === "cl") rows.push({ t: "calc", calc: "tcl", text: "Total current liabilities", cls: "total", indent: true });
   });
   rows.push({ t: "calc", calc: "tl", text: "Total liabilities", cls: "total" });
   rows.push({ t: "head", text: "Stockholders' equity" });
   p.sections.eq.forEach(function (r, i) {
-    var key = "eq" + i;
-    fieldKeys.push({ key: key, sec: "eq", row: r });
-    rows.push({ t: "in", key: key, sec: "eq", indent: true });
+    fieldKeys.push({ key: "eq" + i, sec: "eq", row: r });
+    rows.push({ t: "in", key: "eq" + i, sec: "eq", indent: true });
   });
   rows.push({ t: "calc", calc: "te", text: "Total stockholders' equity", cls: "total", indent: true });
   rows.push({ t: "calc", calc: "tle", text: "Total liabilities and stockholders' equity", cls: "grand" });
   return { rows: rows, fieldKeys: fieldKeys };
 }
-
-var BS_SECTION_NAMES = { ca: "current assets", nca: "noncurrent assets", cl: "current liabilities", ncl: "noncurrent liabilities", eq: "stockholders' equity" };
 
 function startStatement(mode) {
   var isDrop = mode.variant === "dropdown";
@@ -1024,7 +1091,8 @@ function startStatement(mode) {
     ? "Build the classified balance sheet below. The accounts above are listed in no particular order, so you have to sort them into current assets, noncurrent assets, current liabilities, noncurrent liabilities, and equity yourself. Subtotals and totals add themselves up as you type."
     : "<strong>Retained earnings is not given.</strong> Build the classified balance sheet below, then solve for retained earnings using the accounting equation. The accounts above are in no particular order, so you have to classify them yourself. Subtotals and totals add themselves up as you type.";
   wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
-    '<p class="ask" style="margin-top:0;margin-bottom:11px">Account balances as of ' + escapeHtml(prob.date) + ", in millions:</p>" +
+    '<p class="ask" style="margin-top:0;margin-bottom:11px">' + escapeHtml(prob.descr.charAt(0).toUpperCase() + prob.descr.slice(1)) +
+    ", reports the following account balances as of " + escapeHtml(prob.date) + ", in " + prob.unit + ":</p>" +
     "<ul>" + factList + "</ul><p class=\"ask\">" + ask + "</p></div>"));
 
   var card = h('<div class="exam-card" style="padding-top:0"></div>');
@@ -1035,9 +1103,10 @@ function startStatement(mode) {
 
   var labelPool = [];
   ["ca", "nca", "cl", "ncl", "eq"].forEach(function (sec) {
-    BS_ACCOUNTS[sec].forEach(function (a) { labelPool.push(a.label); });
+    prob.sections[sec].forEach(function (r) { labelPool.push(r.label); });
   });
-  labelPool = labelPool.concat(BS_DISTRACTORS);
+  // a few plausible wrong turns, all income statement lines
+  labelPool = labelPool.concat(shuffle(BS_DISTRACTORS).slice(0, 4));
 
   built.rows.forEach(function (r) {
     var tr = document.createElement("tr");
@@ -1137,25 +1206,40 @@ function startStatement(mode) {
 
   checkBtn.addEventListener("click", function () {
     var right = 0, total = 0;
+    var allRows = built.fieldKeys.map(function (f) { return f.row; });
     ["ca", "nca", "cl", "ncl", "eq"].forEach(function (sec) {
       var keyRows = built.fieldKeys.filter(function (f) { return f.sec === sec; }).map(function (f) { return f.row; });
       var claimed = [];
       keysIn(sec).forEach(function (k) {
         total += 2;
         var lf = lblFields[k], af = amtFields[k];
-        // an account name is right if it belongs in this section and has not been used already
         var hit = null;
-        for (var i = 0; i < keyRows.length; i++) {
-          if (claimed.indexOf(i) !== -1) continue;
-          var ok = isDrop ? (lf.value === keyRows[i].label) : matchText(lf.value, keyRows[i].alias);
-          if (ok) { hit = i; break; }
+        if (isDrop) {
+          for (var i = 0; i < keyRows.length; i++) {
+            if (claimed.indexOf(i) === -1 && lf.value === keyRows[i].label) { hit = i; break; }
+          }
+        } else {
+          // closest unclaimed account in this section wins, and a typo only counts
+          // if it is nearer to that account than to anything else on the statement
+          var bestD = Infinity;
+          for (var j = 0; j < keyRows.length; j++) {
+            if (claimed.indexOf(j) !== -1) continue;
+            var d = aliasDistance(lf.value, keyRows[j].alias);
+            if (d < bestD) { bestD = d; hit = j; }
+          }
+          if (bestD === Infinity) hit = null;
+          else if (bestD > 0) {
+            var chosen = keyRows[hit];
+            for (var q = 0; q < allRows.length; q++) {
+              if (allRows[q] !== chosen && aliasDistance(lf.value, allRows[q].alias) < bestD) { hit = null; break; }
+            }
+          }
         }
         var lblOk = hit !== null;
         if (lblOk) claimed.push(hit);
         lf.classList.remove("right", "wrong");
         lf.classList.add(lblOk ? "right" : "wrong");
         if (lblOk) right++;
-        // the amount is graded against whatever account they named on that line
         var amtOk = lblOk && parseAmt(af.value) === keyRows[hit].amt;
         af.classList.remove("right", "wrong");
         af.classList.add(amtOk ? "right" : "wrong");
@@ -1182,14 +1266,15 @@ function startStatement(mode) {
       '<p class="review-correct">Stockholders\' equity (' + fmt(prob.te) + "): " + escapeHtml(order("eq")) + "</p>" +
       '<p class="review-explain">' +
       (prob.hidePlug
-        ? "Retained earnings is the plug: rearrange Assets = Liabilities + Equity to get retained earnings = total assets minus total liabilities minus common stock and additional paid-in capital, so " + fmt(prob.ta) + " minus " + fmt(prob.tl) + " minus " + fmt(prob.te - prob.re) + " equals " + fmt(prob.re) + ". "
+        ? "Retained earnings is the plug: rearrange Assets = Liabilities + Equity to get retained earnings = total assets minus total liabilities minus common stock, so " + fmt(prob.ta) + " minus " + fmt(prob.tl) + " minus " + fmt(prob.te - prob.re) + " equals " + fmt(prob.re) + ". "
         : "Every amount was given, so the work here is classification: current means it converts to cash or comes due within one year or the operating cycle. ") +
+      "The equity section has two pieces and only two: common stock, which is the contributed capital the owners paid in, and retained earnings, which is the earned capital the company generated itself. " +
       "Current assets are listed in order of liquidity and current liabilities in order of maturity, which is the order shown above. Your line order is not graded, only whether each account landed in the right section with the right amount.</p></div>"));
     wrap.appendChild(key);
     scrollTop();
   });
 
-  var newNums = h('<button type="button" class="link-btn">New numbers</button>');
+  var newNums = h('<button type="button" class="link-btn">New problem</button>');
   newNums.addEventListener("click", function () { startStatement(mode); });
   sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
@@ -1199,7 +1284,6 @@ function startStatement(mode) {
   wrap.appendChild(nav);
   render(wrap);
 }
-
 
 /* ---------- income statement builder ---------- */
 var IS_ROWS = [
@@ -1218,12 +1302,20 @@ var IS_LABEL_POOL = [
   "Retained earnings", "Cash", "Dividends paid"
 ];
 
+var IS_PROFILES = [
+  { d: "a high volume retailer, where most of every sales dollar goes to the cost of the product", cogs: [64, 79], sga: [11, 20] },
+  { d: "a manufacturer that makes what it sells", cogs: [52, 67], sga: [14, 24] },
+  { d: "a premium brand that sells at a wide markup but spends heavily on marketing", cogs: [36, 50], sga: [22, 36] },
+  { d: "a distributor running on thin margins", cogs: [70, 82], sga: [8, 15] }
+];
+
 function makeIncomeStatement(hideCogs) {
   var sales, cogs, sga, interest, gross, op, net, tries = 0;
+  var prof = pick(IS_PROFILES);
   do {
     sales = rnd(6000, 120000, 1);
-    cogs = Math.round(sales * (rnd(52, 78, 1) / 100));
-    sga = Math.round(sales * (rnd(11, 28, 1) / 100));
+    cogs = Math.round(sales * (rnd(prof.cogs[0], prof.cogs[1], 1) / 100));
+    sga = Math.round(sales * (rnd(prof.sga[0], prof.sga[1], 1) / 100));
     interest = rnd(20, Math.max(40, Math.round(sales * 0.02)), 1);
     gross = sales - cogs;
     op = gross - sga;
@@ -1235,8 +1327,12 @@ function makeIncomeStatement(hideCogs) {
     ? [["Net sales", sales], ["Gross profit", gross], ["Selling, general, administrative expenses", sga], ["Interest expense", interest]]
     : [["Net sales", sales], ["Cost of goods sold", cogs], ["Selling, general, administrative expenses", sga], ["Interest expense", interest]];
 
+  var biz = pick(BANK.biz);
   return {
-    company: pick(BANK.companies),
+    company: biz.n,
+    descr: biz.d,
+    profile: prof.d,
+    unit: pick(BANK.units),
     date: pick(BANK.dates),
     hideCogs: !!hideCogs,
     facts: shuffle(facts),
@@ -1260,7 +1356,8 @@ function startIncome(mode) {
   var ask = "Build the income statement below" + (isDrop ? " using the dropdowns" : ", typing each account name yourself") +
     ". The figures above are in no particular order. Gross profit, operating income, and net income are subtotals, so they calculate themselves as you type.";
   wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
-    '<p class="ask" style="margin-top:0;margin-bottom:11px">For the year ended ' + escapeHtml(prob.date) + ", in millions:</p>" +
+    '<p class="ask" style="margin-top:0;margin-bottom:11px">' + escapeHtml(prob.descr.charAt(0).toUpperCase() + prob.descr.slice(1)) +
+    " and " + escapeHtml(prob.profile) + ". For the year ended " + escapeHtml(prob.date) + ", in " + prob.unit + ":</p>" +
     "<ul>" + factList + "</ul><p class=\"ask\">" + ask + "</p></div>"));
 
   var card = h('<div class="exam-card" style="padding-top:0"></div>');
@@ -1353,7 +1450,9 @@ function startIncome(mode) {
     IS_ROWS.filter(function (r) { return r.t === "in"; }).forEach(function (r) {
       total += 2;
       var lf = lblFields[r.key], af = amtFields[r.key];
-      var lblOk = isDrop ? (lf.value === r.label) : matchText(lf.value, r.alias);
+      var others = IS_ROWS.filter(function (x) { return x.t === "in" && x !== r; }).map(function (x) { return x.alias; })
+        .concat([["gross profit"], ["operating income"], ["net income"]]);
+      var lblOk = isDrop ? (lf.value === r.label) : matchExclusive(lf.value, r.alias, others);
       lf.classList.remove("right", "wrong");
       lf.classList.add(lblOk ? "right" : "wrong");
       if (lblOk) right++;
@@ -1405,12 +1504,20 @@ var CF_LABEL_POOL = [
   "Net income", "Gross profit", "Retained earnings", "Total assets", "Accounts payable"
 ];
 
+var CF_PROFILES = [
+  { d: "a year of heavy expansion, funded partly by new borrowing", ops: [1200, 9000], inv: [3000, 9000], finSign: 1, fin: [1000, 5000] },
+  { d: "a year spent paying down debt and buying back stock", ops: [2500, 11000], inv: [300, 3000], finSign: -1, fin: [1500, 6500] },
+  { d: "a tight year where operations barely generated cash", ops: [-1500, 900], inv: [200, 2000], finSign: 1, fin: [500, 3500] },
+  { d: "a steady year with routine equipment replacement", ops: [1500, 7000], inv: [800, 4000], finSign: -1, fin: [400, 2500] }
+];
+
 function makeCashFlow() {
   var ops, inv, fin, fx, begin, change, end, tries = 0;
+  var prof = pick(CF_PROFILES);
   do {
-    ops = Math.random() < 0.9 ? rnd(600, 9000, 1) : -rnd(200, 1500, 1);
-    inv = -rnd(200, 6500, 1);
-    fin = Math.random() < 0.75 ? -rnd(150, 4500, 1) : rnd(150, 3500, 1);
+    ops = rnd(prof.ops[0], prof.ops[1], 1);
+    inv = -rnd(prof.inv[0], prof.inv[1], 1);
+    fin = prof.finSign * rnd(prof.fin[0], prof.fin[1], 1);
     fx = Math.random() < 0.5 ? -rnd(5, 320, 1) : rnd(5, 320, 1);
     begin = rnd(250, 7000, 1);
     change = ops + inv + fin + fx;
@@ -1418,8 +1525,12 @@ function makeCashFlow() {
     tries++;
   } while ((end < 60 || Math.abs(change) < 40) && tries < 600);
 
+  var biz = pick(BANK.biz);
   return {
-    company: pick(BANK.companies),
+    company: biz.n,
+    descr: biz.d,
+    profile: prof.d,
+    unit: pick(BANK.units),
     date: pick(BANK.dates),
     facts: shuffle([
       ["Net cash flows from operations", ops],
@@ -1446,7 +1557,8 @@ function startCashFlow(mode) {
     return "<li>" + escapeHtml(f[0]) + ", $" + fmt(f[1]) + "</li>";
   }).join("");
   wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
-    '<p class="ask" style="margin-top:0;margin-bottom:11px">For the year ended ' + escapeHtml(prob.date) + ", in millions:</p>" +
+    '<p class="ask" style="margin-top:0;margin-bottom:11px">' + escapeHtml(prob.descr.charAt(0).toUpperCase() + prob.descr.slice(1)) +
+    ", came through " + escapeHtml(prob.profile) + ". For the year ended " + escapeHtml(prob.date) + ", in " + prob.unit + ":</p>" +
     "<ul>" + factList + "</ul>" +
     '<p class="ask">Build the statement of cash flows below' + (isDrop ? " using the dropdowns" : ", typing each line yourself") +
     ". The figures above are in no particular order, and amounts in parentheses are cash going out. Net change in cash and ending cash calculate themselves as you type.</p></div>"));
@@ -1533,7 +1645,9 @@ function startCashFlow(mode) {
     CF_ROWS.filter(function (r) { return r.t === "in"; }).forEach(function (r) {
       total += 2;
       var lf = lblFields[r.key], af = amtFields[r.key];
-      var lblOk = isDrop ? (lf.value === r.label) : matchText(lf.value, r.alias);
+      var others = CF_ROWS.filter(function (x) { return x.t === "in" && x !== r; }).map(function (x) { return x.alias; })
+        .concat([["net change in cash"], ["cash ending year"]]);
+      var lblOk = isDrop ? (lf.value === r.label) : matchExclusive(lf.value, r.alias, others);
       lf.classList.remove("right", "wrong");
       lf.classList.add(lblOk ? "right" : "wrong");
       if (lblOk) right++;
@@ -1679,10 +1793,8 @@ var CLASSIFY = {
     { label: "Notes payable", e: "A note payable is an obligation to a lender, so it is a liability on the balance sheet." },
     { label: "Unearned revenue", e: "Despite the word revenue, cash collected before delivery is a liability, not income. It is a balance sheet item." },
     { label: "Land", e: "Land is a long-term asset reported on the balance sheet." },
-    { label: "Accrued liabilities", e: "An obligation for an expense already recorded but not yet paid is a liability. The related expense is what appears on the income statement." },
+    { label: "Wages payable", e: "Wages employees have earned but not yet been paid is a liability, so it is a balance sheet item. The wages expense itself is on the income statement." },
     { label: "Long-term debt", e: "Debt not due within a year is a noncurrent liability on the balance sheet." },
-    { label: "Marketable securities", e: "Short-term investments are a current asset on the balance sheet." },
-    { label: "Patents", e: "A patent is an intangible asset, reported on the balance sheet even though it has no physical substance." },
     { label: "Supplies on hand", e: "Supplies not yet used are an asset. They become supplies expense as they get consumed." }
   ],
   i: [
@@ -1782,50 +1894,124 @@ function startClassify(mode) {
 /* ---------- journal entry practice ---------- */
 var JE_ACCOUNTS = {
   cash: { label: "Cash", alias: ["cash"] },
-  cs: { label: "Common stock", alias: ["common stock", "stock", "capital stock"] },
+  cs: { label: "Common stock", alias: ["common stock", "stock", "capital stock", "contributed capital"] },
   inv: { label: "Inventory", alias: ["inventory", "inventories", "merchandise inventory"] },
-  ap: { label: "Accounts payable", alias: ["accounts payable", "ap", "payables", "accounts payables"] },
-  ar: { label: "Accounts receivable", alias: ["accounts receivable", "ar", "receivables", "accounts receivables"] },
+  ap: { label: "Accounts payable", alias: ["accounts payable", "payables", "ap", "accounts payables"] },
+  ar: { label: "Accounts receivable", alias: ["accounts receivable", "receivables", "ar", "accounts receivables"] },
   sales: { label: "Sales", alias: ["sales", "sales revenue", "revenue", "revenues"] },
   cogs: { label: "Cost of goods sold", alias: ["cost of goods sold", "cogs", "cost of sales"] },
   equip: { label: "Equipment", alias: ["equipment"] },
-  np: { label: "Notes payable", alias: ["notes payable", "note payable", "notes payables"] },
+  np: { label: "Notes payable", alias: ["notes payable", "note payable", "notes payables", "bank loan"] },
   wages: { label: "Wages expense", alias: ["wages expense", "wage expense", "wages", "salaries expense"] },
-  re: { label: "Retained earnings", alias: ["retained earnings"] }
+  re: { label: "Retained earnings", alias: ["retained earnings"] },
+  supplies: { label: "Supplies", alias: ["supplies", "supplies on hand", "office supplies"] },
+  svc: { label: "Service revenue", alias: ["service revenue", "service revenues", "revenue", "revenues", "fees earned", "service fees earned"] },
+  rent: { label: "Rent expense", alias: ["rent expense", "rent", "rental expense"] },
+  prepaid: { label: "Prepaid insurance", alias: ["prepaid insurance", "prepaid expense", "prepaid expenses", "prepaids", "prepaid"] },
+  unearned: { label: "Unearned revenue", alias: ["unearned revenue", "deferred revenue", "unearned revenues"] },
+  land: { label: "Land", alias: ["land"] }
 };
 
-var JE_DISTRACTORS = ["Dividends", "Unearned revenue", "Prepaid insurance", "Interest expense", "Land", "Accrued liabilities", "Additional paid-in capital", "Supplies"];
+var JE_DISTRACTORS = ["Dividends", "Interest expense", "Utilities expense", "Gross profit", "Net income", "Total assets"];
+
+// three different companies with three different transaction sets
+var JE_TEMPLATES = [
+  {
+    name: "merchandiser",
+    build: function () {
+      var A = JE_ACCOUNTS, n = {}, tries = 0;
+      do {
+        n.stock = rnd(8, 30, 1) * 5000;
+        n.inv = rnd(6, 40, 1) * 500;
+        n.sale = Math.round(n.inv * (rnd(130, 195, 1) / 100) / 500) * 500;
+        n.equip = rnd(8, 40, 1) * 1000;
+        n.wages = rnd(3, 18, 1) * 500;
+        n.div = rnd(2, 20, 1) * 500;
+        n.cash = n.stock + n.sale - n.wages - n.equip - n.div;
+        tries++;
+      } while ((n.sale <= n.inv || n.cash < 5000) && tries < 400);
+      return [
+        { text: "Receive $" + fmt(n.stock) + " cash in exchange for common stock.", dr: A.cash, cr: A.cs, amt: n.stock, memo: "To record stock issuance." },
+        { text: "Purchase $" + fmt(n.inv) + " of inventory on credit.", dr: A.inv, cr: A.ap, amt: n.inv, memo: "To record purchase of inventory." },
+        { text: "Sell inventory for $" + fmt(n.sale) + " on credit.", dr: A.ar, cr: A.sales, amt: n.sale, memo: "To record sale of inventory." },
+        { text: "Record $" + fmt(n.inv) + " for cost of inventory sold in transaction 3.", dr: A.cogs, cr: A.inv, amt: n.inv, memo: "To record cost of inventory sold." },
+        { text: "Collect $" + fmt(n.sale) + " cash from transaction 3.", dr: A.cash, cr: A.ar, amt: n.sale, memo: "To record cash collection." },
+        { text: "Acquire $" + fmt(n.equip) + " of equipment by signing a note.", dr: A.equip, cr: A.np, amt: n.equip, memo: "To record acquisition of equipment." },
+        { text: "Pay wages of $" + fmt(n.wages) + " in cash.", dr: A.wages, cr: A.cash, amt: n.wages, memo: "To record wage payment." },
+        { text: "Pay $" + fmt(n.equip) + " on a note payable that came due.", dr: A.np, cr: A.cash, amt: n.equip, memo: "To record payment of note payable." },
+        { text: "Pay $" + fmt(n.div) + " cash dividend.", dr: A.re, cr: A.cash, amt: n.div, memo: "To record payment of cash dividend." }
+      ];
+    }
+  },
+  {
+    name: "service company",
+    build: function () {
+      var A = JE_ACCOUNTS, n = {}, tries = 0;
+      do {
+        n.stock = rnd(6, 24, 1) * 5000;
+        n.loan = rnd(4, 24, 1) * 500;
+        n.supplies = rnd(2, 14, 1) * 500;
+        n.billed = rnd(10, 40, 1) * 1000;
+        n.collected = Math.round(n.billed * (rnd(40, 85, 1) / 100) / 500) * 500;
+        n.rent = rnd(3, 16, 1) * 500;
+        n.wages = rnd(4, 20, 1) * 500;
+        n.div = rnd(2, 16, 1) * 500;
+        n.cash = n.stock + n.loan - n.supplies + n.collected - n.rent - n.wages - n.div;
+        tries++;
+      } while ((n.collected >= n.billed || n.cash < 4000) && tries < 400);
+      return [
+        { text: "Issue common stock to investors for $" + fmt(n.stock) + " cash.", dr: A.cash, cr: A.cs, amt: n.stock, memo: "To record stock issuance." },
+        { text: "Borrow $" + fmt(n.loan) + " from a bank by signing a note.", dr: A.cash, cr: A.np, amt: n.loan, memo: "To record bank borrowing." },
+        { text: "Purchase $" + fmt(n.supplies) + " of supplies on credit.", dr: A.supplies, cr: A.ap, amt: n.supplies, memo: "To record purchase of supplies." },
+        { text: "Pay the supplier the $" + fmt(n.supplies) + " owed from transaction 3.", dr: A.ap, cr: A.cash, amt: n.supplies, memo: "To record payment on account." },
+        { text: "Perform services and bill customers $" + fmt(n.billed) + ".", dr: A.ar, cr: A.svc, amt: n.billed, memo: "To record services performed on account." },
+        { text: "Collect $" + fmt(n.collected) + " of the amount billed in transaction 5.", dr: A.cash, cr: A.ar, amt: n.collected, memo: "To record cash collection." },
+        { text: "Pay rent of $" + fmt(n.rent) + " in cash.", dr: A.rent, cr: A.cash, amt: n.rent, memo: "To record rent payment." },
+        { text: "Pay wages of $" + fmt(n.wages) + " in cash.", dr: A.wages, cr: A.cash, amt: n.wages, memo: "To record wage payment." },
+        { text: "Pay a $" + fmt(n.div) + " cash dividend to shareholders.", dr: A.re, cr: A.cash, amt: n.div, memo: "To record payment of cash dividend." }
+      ];
+    }
+  },
+  {
+    name: "retailer",
+    build: function () {
+      var A = JE_ACCOUNTS, n = {}, tries = 0;
+      do {
+        n.stock = rnd(10, 34, 1) * 5000;
+        n.insurance = rnd(2, 10, 1) * 500;
+        n.inv = rnd(8, 40, 1) * 500;
+        n.sale = Math.round(n.inv * (rnd(135, 200, 1) / 100) / 500) * 500;
+        n.deposit = rnd(2, 12, 1) * 500;
+        n.wages = rnd(4, 18, 1) * 500;
+        n.land = rnd(6, 24, 1) * 1000;
+        n.cash = n.stock - n.insurance + n.sale + n.deposit - n.inv - n.wages - n.land;
+        tries++;
+      } while ((n.sale <= n.inv || n.cash < 4000) && tries < 400);
+      return [
+        { text: "Issue common stock for $" + fmt(n.stock) + " cash.", dr: A.cash, cr: A.cs, amt: n.stock, memo: "To record stock issuance." },
+        { text: "Pay $" + fmt(n.insurance) + " cash in advance for a one-year insurance policy.", dr: A.prepaid, cr: A.cash, amt: n.insurance, memo: "To record prepayment of insurance." },
+        { text: "Purchase $" + fmt(n.inv) + " of inventory on credit.", dr: A.inv, cr: A.ap, amt: n.inv, memo: "To record purchase of inventory." },
+        { text: "Sell inventory for $" + fmt(n.sale) + " cash.", dr: A.cash, cr: A.sales, amt: n.sale, memo: "To record cash sale." },
+        { text: "Record $" + fmt(n.inv) + " for the cost of the inventory sold in transaction 4.", dr: A.cogs, cr: A.inv, amt: n.inv, memo: "To record cost of inventory sold." },
+        { text: "Receive $" + fmt(n.deposit) + " cash from a customer for goods to be delivered next year.", dr: A.cash, cr: A.unearned, amt: n.deposit, memo: "To record customer deposit." },
+        { text: "Pay the $" + fmt(n.inv) + " owed to suppliers from transaction 3.", dr: A.ap, cr: A.cash, amt: n.inv, memo: "To record payment on account." },
+        { text: "Pay wages of $" + fmt(n.wages) + " in cash.", dr: A.wages, cr: A.cash, amt: n.wages, memo: "To record wage payment." },
+        { text: "Purchase land for $" + fmt(n.land) + " cash.", dr: A.land, cr: A.cash, amt: n.land, memo: "To record purchase of land." }
+      ];
+    }
+  }
+];
 
 function makeJournal() {
-  var stock, inv, sale, equip, wages, div, endCash, tries = 0;
-  do {
-    stock = rnd(8, 30, 1) * 5000;
-    inv = rnd(6, 40, 1) * 500;
-    sale = Math.round(inv * (rnd(130, 195, 1) / 100) / 500) * 500;
-    equip = rnd(8, 40, 1) * 1000;
-    wages = rnd(3, 18, 1) * 500;
-    div = rnd(2, 20, 1) * 500;
-    endCash = stock + sale - wages - equip - div;
-    tries++;
-  } while ((sale <= inv || endCash < 5000) && tries < 500);
-
-  var A = JE_ACCOUNTS;
-  var entries = [
-    { text: "Receive $" + fmt(stock) + " cash in exchange for common stock.", dr: A.cash, cr: A.cs, amt: stock, memo: "To record stock issuance." },
-    { text: "Purchase $" + fmt(inv) + " of inventory on credit.", dr: A.inv, cr: A.ap, amt: inv, memo: "To record purchase of inventory." },
-    { text: "Sell inventory for $" + fmt(sale) + " on credit.", dr: A.ar, cr: A.sales, amt: sale, memo: "To record sale of inventory." },
-    { text: "Record $" + fmt(inv) + " for cost of inventory sold in transaction 3.", dr: A.cogs, cr: A.inv, amt: inv, memo: "To record cost of inventory sold." },
-    { text: "Collect $" + fmt(sale) + " cash from transaction 3.", dr: A.cash, cr: A.ar, amt: sale, memo: "To record cash collection." },
-    { text: "Acquire $" + fmt(equip) + " of equipment by signing a note.", dr: A.equip, cr: A.np, amt: equip, memo: "To record acquisition of equipment." },
-    { text: "Pay wages of $" + fmt(wages) + " in cash.", dr: A.wages, cr: A.cash, amt: wages, memo: "To record wage payment." },
-    { text: "Pay $" + fmt(equip) + " on a note payable that came due.", dr: A.np, cr: A.cash, amt: equip, memo: "To record payment of note payable." },
-    { text: "Pay $" + fmt(div) + " cash dividend.", dr: A.re, cr: A.cash, amt: div, memo: "To record payment of cash dividend." }
-  ];
+  var tpl = pick(JE_TEMPLATES);
+  var entries = tpl.build();
+  var biz = pick(BANK.biz);
   return {
-    company: pick(BANK.companies),
+    company: biz.n,
+    descr: biz.d,
+    template: tpl.name,
     entries: entries,
-    totals: entries.reduce(function (t, e) { return t + e.amt; }, 0),
-    nums: { stock: stock, inv: inv, sale: sale, equip: equip, wages: wages, div: div, endCash: endCash }
+    totals: entries.reduce(function (t, e) { return t + e.amt; }, 0)
   };
 }
 
@@ -1836,15 +2022,27 @@ function startJournal(mode) {
 
   var bar = h('<div class="topbar"></div>');
   bar.appendChild(homeLink());
-  bar.appendChild(h('<div class="topbar-label">9 entries</div>'));
+  bar.appendChild(h('<div class="topbar-label">' + prob.entries.length + " entries</div>"));
   wrap.appendChild(bar);
 
-  var txns = prob.entries.map(function (e, i) { return "<li>" + escapeHtml(e.text) + "</li>"; }).join("");
+  var txns = prob.entries.map(function (e) { return "<li>" + escapeHtml(e.text) + "</li>"; }).join("");
   wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
-    '<p class="ask" style="margin-top:0;margin-bottom:11px">Record each transaction in the general journal below.</p>' +
+    '<p class="ask" style="margin-top:0;margin-bottom:11px">' + escapeHtml(prob.descr.charAt(0).toUpperCase() + prob.descr.slice(1)) +
+    ", entered into the following transactions. Record each one in the general journal below.</p>" +
     '<ol class="txn-list">' + txns + "</ol>" +
     '<p class="ask">Debit line first, credit line indented underneath' + (isDrop ? " (pick each account from the dropdown)" : " (type each account name yourself)") +
     ". Put each amount in the correct column and leave the other column blank. Total debits and total credits at the bottom update as you type.</p></div>"));
+
+  // the dropdown offers the accounts this company actually uses, plus a few wrong turns
+  var used = [];
+  prob.entries.forEach(function (e) {
+    [e.dr.label, e.cr.label].forEach(function (l) { if (used.indexOf(l) === -1) used.push(l); });
+  });
+  var labelPool = used.concat(shuffle(JE_DISTRACTORS).slice(0, 4));
+  var allAliases = [];
+  prob.entries.forEach(function (e) {
+    [e.dr, e.cr].forEach(function (a) { if (allAliases.indexOf(a.alias) === -1) allAliases.push(a.alias); });
+  });
 
   var card = h('<div class="exam-card" style="padding-top:18px"></div>');
   var table = h('<table class="je-table"><thead><tr><th>Ref</th><th>Description</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead><tbody></tbody></table>');
@@ -1855,10 +2053,7 @@ function startJournal(mode) {
     if (isDrop) {
       var sel = document.createElement("select");
       sel.className = "je-acct-field";
-      var pool = [];
-      Object.keys(JE_ACCOUNTS).forEach(function (k) { pool.push(JE_ACCOUNTS[k].label); });
-      pool = pool.concat(JE_DISTRACTORS);
-      sel.innerHTML = '<option value="">Select account</option>' + shuffle(pool).map(function (o) {
+      sel.innerHTML = '<option value="">Select account</option>' + shuffle(labelPool).map(function (o) {
         return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
       }).join("");
       return sel;
@@ -1947,11 +2142,11 @@ function startJournal(mode) {
     lines.forEach(function (l) {
       var target = l.side === "dr" ? l.entry.dr : l.entry.cr;
       total += 2;
-      var acctOk = isDrop ? (l.acct.value === target.label) : matchText(l.acct.value, target.alias);
+      var others = allAliases.filter(function (a) { return a !== target.alias; });
+      var acctOk = isDrop ? (l.acct.value === target.label) : matchExclusive(l.acct.value, target.alias, others);
       l.acct.classList.remove("right", "wrong");
       l.acct.classList.add(acctOk ? "right" : "wrong");
       if (acctOk) right++;
-      // the amount has to be in the correct column, with the other column left empty
       var filled = l.side === "dr" ? l.dr : l.cr;
       var empty = l.side === "dr" ? l.cr : l.dr;
       var emptyOk = empty.value.trim() === "" || parseAmt(empty.value) === 0;
@@ -1969,13 +2164,13 @@ function startJournal(mode) {
       return '<p class="review-correct">(' + (i + 1) + ") Dr " + escapeHtml(e.dr.label) + " " + fmt(e.amt) + ", Cr " + escapeHtml(e.cr.label) + " " + fmt(e.amt) + "</p>";
     }).join("");
     key.appendChild(h('<div class="review-item">' + rowsHtml +
-      '<p class="review-explain">Three things to watch on this problem. Entry 4 uses the same amount as entry 2 because all of the inventory purchased was sold, and entry 8 repays exactly what the note in entry 6 created, so those amounts are never independent. ' +
-      "The dividend in entry 9 debits Retained earnings, not a Dividends account, because that is how your slides record it, and a dividend is a distribution to owners rather than an expense. " +
+      '<p class="review-explain">Watch the transactions that reuse an earlier amount: paying off what you owe, collecting what you billed, or recording the cost of what you sold is never an independent number. ' +
+      "The dividend debits Retained earnings, not a Dividends account, because that is how your slides record it, and a dividend is a distribution to owners rather than an expense. " +
       "Debits total " + fmt(prob.totals) + " and credits total the same, which is the fastest check that you have not flipped a column somewhere.</p></div>"));
     wrap.appendChild(key);
     scrollTop();
   });
-  var newNums = h('<button type="button" class="link-btn">New numbers</button>');
+  var newNums = h('<button type="button" class="link-btn">New problem</button>');
   newNums.addEventListener("click", function () { startJournal(mode); });
   sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
@@ -1986,78 +2181,211 @@ function startJournal(mode) {
   render(wrap);
 }
 
-
-/* ---------- transactions to financial statements ---------- */
-var TX_STUDIOS = ["Paulson Photography", "Kestrel Photography", "Marin Studio", "Brightline Studios", "Copperfield Photo", "Larkin Photography"];
-
+/* ---------- transactions to journal entries to financial statements ---------- */
 var TX_ACCTS = {
-  rev: { label: "Service revenue", alias: ["service revenue", "service revenues", "revenue", "revenues", "sales", "sales revenue", "fees earned", "service fees earned", "photo services revenue"] },
-  rent: { label: "Rent expense", alias: ["rent expense", "rent", "rental expense", "equipment rent expense"] },
-  misc: { label: "Miscellaneous expense", alias: ["miscellaneous expense", "miscellaneous expenses", "misc expense", "misc expenses", "miscellaneous"] },
-  loss: { label: "Loss on sale of land", alias: ["loss on sale of land", "loss on land sale", "loss on sale", "loss"] },
   cash: { label: "Cash", alias: ["cash"] },
   ar: { label: "Accounts receivable", alias: ["accounts receivable", "receivables", "ar", "accounts receivables"] },
   land: { label: "Land", alias: ["land"] },
+  equip: { label: "Equipment", alias: ["equipment", "equipment net"] },
+  inv: { label: "Inventory", alias: ["inventory", "inventories", "merchandise inventory"] },
+  ap: { label: "Accounts payable", alias: ["accounts payable", "payables", "ap", "accounts payables"] },
   np: { label: "Notes payable", alias: ["notes payable", "note payable", "bank loan", "loan payable", "notes payables"] },
-  cs: { label: "Common stock", alias: ["common stock", "stock", "capital stock"] },
-  re: { label: "Retained earnings", alias: ["retained earnings"] }
+  cs: { label: "Common stock", alias: ["common stock", "stock", "capital stock", "contributed capital"] },
+  re: { label: "Retained earnings", alias: ["retained earnings", "earned capital"] },
+  svc: { label: "Service revenue", alias: ["service revenue", "service revenues", "revenue", "revenues", "fees earned", "service fees earned"] },
+  sales: { label: "Sales", alias: ["sales", "sales revenue", "revenue", "revenues"] },
+  cogs: { label: "Cost of goods sold", alias: ["cost of goods sold", "cogs", "cost of sales"] },
+  rent: { label: "Rent expense", alias: ["rent expense", "rent", "rental expense", "equipment rent expense"] },
+  misc: { label: "Miscellaneous expense", alias: ["miscellaneous expense", "miscellaneous expenses", "misc expense", "misc expenses", "miscellaneous"] },
+  wages: { label: "Wages expense", alias: ["wages expense", "wage expense", "wages", "salaries expense"] },
+  util: { label: "Utilities expense", alias: ["utilities expense", "utility expense", "utilities"] },
+  loss: { label: "Loss on sale of land", alias: ["loss on sale of land", "loss on land sale", "loss on sale", "loss"] }
 };
 
-var TX_DISTRACTORS = ["Dividends", "Equipment", "Prepaid rent", "Accounts payable", "Inventory", "Cost of goods sold", "Gain on sale of land", "Wages expense", "Unearned revenue"];
+var TX_DISTRACTORS = ["Dividends", "Prepaid rent", "Unearned revenue", "Gross profit", "Net income", "Total assets", "Interest expense"];
+
+var TX_TEMPLATES = [
+  {
+    id: "studio",
+    names: ["Paulson Photography", "Kestrel Photography", "Marin Studio", "Brightline Studios", "Copperfield Photo"],
+    descr: "a portrait and event photography studio",
+    build: function () {
+      var A = TX_ACCTS, n = {}, tries = 0;
+      do {
+        n.cs = rnd(8, 30, 1) * 1000;
+        n.np = rnd(4, 24, 1) * 500;
+        n.land = rnd(6, 20, 1) * 1000;
+        n.rent = rnd(4, 16, 1) * 500;
+        n.svcCash = rnd(8, 30, 1) * 1000;
+        n.svcAr = rnd(2, 12, 1) * 500;
+        n.misc = rnd(4, 16, 1) * 500;
+        n.parcelCost = Math.round(n.land * (rnd(25, 50, 1) / 100) / 500) * 500;
+        n.loss = rnd(1, 8, 1) * 100;
+        n.parcelPrice = n.parcelCost - n.loss;
+        n.div = rnd(2, 16, 1) * 500;
+        n.rev = n.svcCash + n.svcAr;
+        n.ni = n.rev - n.rent - n.misc - n.loss;
+        n.re = n.ni - n.div;
+        n.cash = n.cs + n.np - n.land - n.rent + n.svcCash - n.misc + n.parcelPrice - n.div;
+        n.landLeft = n.land - n.parcelCost;
+        tries++;
+      } while ((n.cash < 1500 || n.ni < 1200 || n.re < 500 || n.parcelCost < 1000 || n.landLeft < 1500) && tries < 900);
+      return {
+        n: n,
+        txns: [
+          "Collected $" + fmt(n.cs) + " in cash from shareholders.",
+          "Borrowed $" + fmt(n.np) + " from a bank.",
+          "Purchased two parcels of land for a total of $" + fmt(n.land) + ".",
+          "Paid $" + fmt(n.rent) + " cash to rent camera equipment for the remainder of the year.",
+          "Sold photo services to customers, receiving $" + fmt(n.svcCash) + " in cash and $" + fmt(n.svcAr) + " in receivables.",
+          "Paid miscellaneous expenses of $" + fmt(n.misc) + ".",
+          "Sold one parcel of land with a cost of $" + fmt(n.parcelCost) + " for $" + fmt(n.parcelPrice) + ".",
+          "Paid a $" + fmt(n.div) + " dividend to shareholders."
+        ],
+        entries: [
+          { memo: "To record stock issuance.", lines: [{ a: A.cash, v: n.cs, s: "dr" }, { a: A.cs, v: n.cs, s: "cr" }] },
+          { memo: "To record bank borrowing.", lines: [{ a: A.cash, v: n.np, s: "dr" }, { a: A.np, v: n.np, s: "cr" }] },
+          { memo: "To record purchase of land.", lines: [{ a: A.land, v: n.land, s: "dr" }, { a: A.cash, v: n.land, s: "cr" }] },
+          { memo: "To record equipment rental.", lines: [{ a: A.rent, v: n.rent, s: "dr" }, { a: A.cash, v: n.rent, s: "cr" }] },
+          { memo: "To record services performed.", lines: [{ a: A.cash, v: n.svcCash, s: "dr" }, { a: A.ar, v: n.svcAr, s: "dr" }, { a: A.svc, v: n.rev, s: "cr" }] },
+          { memo: "To record miscellaneous expenses.", lines: [{ a: A.misc, v: n.misc, s: "dr" }, { a: A.cash, v: n.misc, s: "cr" }] },
+          { memo: "To record sale of one parcel of land.", lines: [{ a: A.cash, v: n.parcelPrice, s: "dr" }, { a: A.loss, v: n.loss, s: "dr" }, { a: A.land, v: n.parcelCost, s: "cr" }] },
+          { memo: "To record payment of cash dividend.", lines: [{ a: A.re, v: n.div, s: "dr" }, { a: A.cash, v: n.div, s: "cr" }] }
+        ],
+        is: { rev: [{ a: A.svc, v: n.rev }], exp: [{ a: A.rent, v: n.rent }, { a: A.misc, v: n.misc }, { a: A.loss, v: n.loss }] },
+        bs: { asset: [{ a: A.cash, v: n.cash }, { a: A.ar, v: n.svcAr }, { a: A.land, v: n.landLeft }],
+              liab: [{ a: A.np, v: n.np }], eq: [{ a: A.cs, v: n.cs }, { a: A.re, v: n.re }] },
+        notes: "The receivable is revenue the moment the service is delivered, so revenue is " + fmt(n.rev) + " even though only " + fmt(n.svcCash) +
+          " came in as cash. Renting the camera equipment for the remainder of the year means it is fully used up, so it is rent expense, not equipment and not prepaid rent. " +
+          "Land drops to " + fmt(n.landLeft) + " because one parcel costing " + fmt(n.parcelCost) + " is gone, and selling it for " + fmt(n.parcelPrice) +
+          " creates a loss of " + fmt(n.loss) + " on the income statement rather than revenue."
+      };
+    }
+  },
+  {
+    id: "consulting",
+    names: ["Cedar Ridge Consulting", "Halverson Advisory", "Northline Consulting", "Brookfield Partners"],
+    descr: "a small business consulting firm",
+    build: function () {
+      var A = TX_ACCTS, n = {}, tries = 0;
+      do {
+        n.cs = rnd(10, 30, 1) * 1000;
+        n.np = rnd(6, 24, 1) * 500;
+        n.equip = rnd(5, 20, 1) * 1000;
+        n.svcCash = rnd(10, 34, 1) * 1000;
+        n.svcAr = rnd(6, 20, 1) * 500;
+        n.wages = rnd(6, 22, 1) * 500;
+        n.util = rnd(2, 10, 1) * 500;
+        n.collected = Math.round(n.svcAr * (rnd(30, 75, 1) / 100) / 500) * 500;
+        n.div = rnd(2, 14, 1) * 500;
+        n.rev = n.svcCash + n.svcAr;
+        n.ni = n.rev - n.wages - n.util;
+        n.re = n.ni - n.div;
+        n.cash = n.cs + n.np - n.equip + n.svcCash - n.wages - n.util + n.collected - n.div;
+        n.arLeft = n.svcAr - n.collected;
+        tries++;
+      } while ((n.cash < 2000 || n.ni < 2000 || n.re < 800 || n.arLeft < 500 || n.collected < 500) && tries < 900);
+      return {
+        n: n,
+        txns: [
+          "Issued common stock to the founders for $" + fmt(n.cs) + " cash.",
+          "Borrowed $" + fmt(n.np) + " from a bank by signing a note payable.",
+          "Purchased $" + fmt(n.equip) + " of office equipment for cash.",
+          "Performed consulting services, receiving $" + fmt(n.svcCash) + " in cash and billing clients $" + fmt(n.svcAr) + " on account.",
+          "Paid wages of $" + fmt(n.wages) + " in cash.",
+          "Paid utilities of $" + fmt(n.util) + " in cash.",
+          "Collected $" + fmt(n.collected) + " of the amount billed in transaction 4.",
+          "Paid a $" + fmt(n.div) + " dividend to shareholders."
+        ],
+        entries: [
+          { memo: "To record stock issuance.", lines: [{ a: A.cash, v: n.cs, s: "dr" }, { a: A.cs, v: n.cs, s: "cr" }] },
+          { memo: "To record bank borrowing.", lines: [{ a: A.cash, v: n.np, s: "dr" }, { a: A.np, v: n.np, s: "cr" }] },
+          { memo: "To record purchase of equipment.", lines: [{ a: A.equip, v: n.equip, s: "dr" }, { a: A.cash, v: n.equip, s: "cr" }] },
+          { memo: "To record services performed.", lines: [{ a: A.cash, v: n.svcCash, s: "dr" }, { a: A.ar, v: n.svcAr, s: "dr" }, { a: A.svc, v: n.rev, s: "cr" }] },
+          { memo: "To record wage payment.", lines: [{ a: A.wages, v: n.wages, s: "dr" }, { a: A.cash, v: n.wages, s: "cr" }] },
+          { memo: "To record utilities payment.", lines: [{ a: A.util, v: n.util, s: "dr" }, { a: A.cash, v: n.util, s: "cr" }] },
+          { memo: "To record cash collection.", lines: [{ a: A.cash, v: n.collected, s: "dr" }, { a: A.ar, v: n.collected, s: "cr" }] },
+          { memo: "To record payment of cash dividend.", lines: [{ a: A.re, v: n.div, s: "dr" }, { a: A.cash, v: n.div, s: "cr" }] }
+        ],
+        is: { rev: [{ a: A.svc, v: n.rev }], exp: [{ a: A.wages, v: n.wages }, { a: A.util, v: n.util }] },
+        bs: { asset: [{ a: A.cash, v: n.cash }, { a: A.ar, v: n.arLeft }, { a: A.equip, v: n.equip }],
+              liab: [{ a: A.np, v: n.np }], eq: [{ a: A.cs, v: n.cs }, { a: A.re, v: n.re }] },
+        notes: "Revenue is the full " + fmt(n.rev) + " earned, cash and billed together, and collecting part of the billing later is not new revenue. " +
+          "Accounts receivable ends at " + fmt(n.arLeft) + ": billed " + fmt(n.svcAr) + " less the " + fmt(n.collected) + " collected. " +
+          "Buying equipment for cash moves money between two assets, so it never touches the income statement."
+      };
+    }
+  },
+  {
+    id: "retail",
+    names: ["Talbot Marine Supply", "Verdant Outdoor", "Brightpath Retail", "Delacroix Bakery"],
+    descr: "a specialty goods retailer",
+    build: function () {
+      var A = TX_ACCTS, n = {}, tries = 0;
+      do {
+        n.cs = rnd(12, 34, 1) * 1000;
+        n.inv = rnd(10, 30, 1) * 1000;
+        n.sales = rnd(14, 40, 1) * 1000;
+        n.cogs = Math.round(n.inv * (rnd(55, 85, 1) / 100) / 500) * 500;
+        n.collected = Math.round(n.sales * (rnd(45, 80, 1) / 100) / 500) * 500;
+        n.paid = Math.round(n.inv * (rnd(45, 80, 1) / 100) / 500) * 500;
+        n.rent = rnd(4, 16, 1) * 500;
+        n.div = rnd(2, 14, 1) * 500;
+        n.ni = n.sales - n.cogs - n.rent;
+        n.re = n.ni - n.div;
+        n.cash = n.cs + n.collected - n.paid - n.rent - n.div;
+        n.arLeft = n.sales - n.collected;
+        n.invLeft = n.inv - n.cogs;
+        n.apLeft = n.inv - n.paid;
+        tries++;
+      } while ((n.cash < 2000 || n.ni < 2000 || n.re < 800 || n.arLeft < 1000 || n.invLeft < 1000 || n.apLeft < 1000 || n.cogs >= n.sales) && tries < 900);
+      return {
+        n: n,
+        txns: [
+          "Issued common stock for $" + fmt(n.cs) + " cash.",
+          "Purchased $" + fmt(n.inv) + " of inventory on account.",
+          "Sold inventory to customers for $" + fmt(n.sales) + " on account.",
+          "Recorded $" + fmt(n.cogs) + " as the cost of the inventory sold in transaction 3.",
+          "Collected $" + fmt(n.collected) + " of the amount owed by customers.",
+          "Paid $" + fmt(n.paid) + " of the amount owed to suppliers.",
+          "Paid store rent of $" + fmt(n.rent) + " in cash.",
+          "Paid a $" + fmt(n.div) + " dividend to shareholders."
+        ],
+        entries: [
+          { memo: "To record stock issuance.", lines: [{ a: A.cash, v: n.cs, s: "dr" }, { a: A.cs, v: n.cs, s: "cr" }] },
+          { memo: "To record purchase of inventory.", lines: [{ a: A.inv, v: n.inv, s: "dr" }, { a: A.ap, v: n.inv, s: "cr" }] },
+          { memo: "To record sale of inventory.", lines: [{ a: A.ar, v: n.sales, s: "dr" }, { a: A.sales, v: n.sales, s: "cr" }] },
+          { memo: "To record cost of inventory sold.", lines: [{ a: A.cogs, v: n.cogs, s: "dr" }, { a: A.inv, v: n.cogs, s: "cr" }] },
+          { memo: "To record cash collection.", lines: [{ a: A.cash, v: n.collected, s: "dr" }, { a: A.ar, v: n.collected, s: "cr" }] },
+          { memo: "To record payment on account.", lines: [{ a: A.ap, v: n.paid, s: "dr" }, { a: A.cash, v: n.paid, s: "cr" }] },
+          { memo: "To record rent payment.", lines: [{ a: A.rent, v: n.rent, s: "dr" }, { a: A.cash, v: n.rent, s: "cr" }] },
+          { memo: "To record payment of cash dividend.", lines: [{ a: A.re, v: n.div, s: "dr" }, { a: A.cash, v: n.div, s: "cr" }] }
+        ],
+        is: { rev: [{ a: A.sales, v: n.sales }], exp: [{ a: A.cogs, v: n.cogs }, { a: A.rent, v: n.rent }] },
+        bs: { asset: [{ a: A.cash, v: n.cash }, { a: A.ar, v: n.arLeft }, { a: A.inv, v: n.invLeft }],
+              liab: [{ a: A.ap, v: n.apLeft }], eq: [{ a: A.cs, v: n.cs }, { a: A.re, v: n.re }] },
+        notes: "Only part of the inventory was sold, so inventory ends at " + fmt(n.invLeft) + " and only " + fmt(n.cogs) +
+          " of its cost reaches the income statement. Selling and collecting are two separate events: revenue is the full " + fmt(n.sales) +
+          " while cash only went up by the " + fmt(n.collected) + " collected, leaving " + fmt(n.arLeft) + " in receivables. " +
+          "Paying suppliers reduces accounts payable to " + fmt(n.apLeft) + " and is not an expense."
+      };
+    }
+  }
+];
 
 function makeTransactions() {
-  var cs, np, land, rent, svcCash, svcAr, misc, parcelCost, parcelPrice, loss, div;
-  var rev, ni, re, cash, landLeft, ta, tries = 0;
-  do {
-    cs = rnd(8, 30, 1) * 1000;
-    np = rnd(4, 24, 1) * 500;
-    land = rnd(6, 20, 1) * 1000;
-    rent = rnd(4, 16, 1) * 500;
-    svcCash = rnd(8, 30, 1) * 1000;
-    svcAr = rnd(2, 12, 1) * 500;
-    misc = rnd(4, 16, 1) * 500;
-    parcelCost = Math.round(land * (rnd(25, 50, 1) / 100) / 500) * 500;
-    loss = rnd(1, 8, 1) * 100;
-    parcelPrice = parcelCost - loss;
-    div = rnd(2, 16, 1) * 500;
-    rev = svcCash + svcAr;
-    ni = rev - rent - misc - loss;
-    re = ni - div;
-    cash = cs + np - land - rent + svcCash - misc + parcelPrice - div;
-    landLeft = land - parcelCost;
-    ta = cash + svcAr + landLeft;
-    tries++;
-  } while ((cash < 1500 || ni < 1200 || re < 500 || parcelCost < 1000 || landLeft < 1500) && tries < 900);
-
-  var A = TX_ACCTS;
-  return {
-    company: pick(TX_STUDIOS),
-    date: pick(BANK.dates),
-    txns: [
-      "Collected $" + fmt(cs) + " in cash from shareholders.",
-      "Borrowed $" + fmt(np) + " from a bank.",
-      "Purchased two parcels of land for a total of $" + fmt(land) + ".",
-      "Paid $" + fmt(rent) + " cash to rent camera equipment for the remainder of the year.",
-      "Sold photo services to customers, receiving $" + fmt(svcCash) + " in cash and $" + fmt(svcAr) + " in receivables.",
-      "Paid miscellaneous expenses of $" + fmt(misc) + ".",
-      "Sold one parcel of land with a cost of $" + fmt(parcelCost) + " for $" + fmt(parcelPrice) + ".",
-      "Paid a $" + fmt(div) + " dividend to shareholders."
-    ],
-    keys: {
-      rev: { a: A.rev, v: rev }, rent: { a: A.rent, v: rent }, misc: { a: A.misc, v: misc }, loss: { a: A.loss, v: loss },
-      cash: { a: A.cash, v: cash }, ar: { a: A.ar, v: svcAr }, land: { a: A.land, v: landLeft },
-      np: { a: A.np, v: np }, cs: { a: A.cs, v: cs }, re: { a: A.re, v: re }
-    },
-    n: { cs: cs, np: np, land: land, rent: rent, svcCash: svcCash, svcAr: svcAr, misc: misc,
-         parcelCost: parcelCost, parcelPrice: parcelPrice, loss: loss, div: div,
-         rev: rev, ni: ni, re: re, cash: cash, landLeft: landLeft, ta: ta }
-  };
+  var tpl = pick(TX_TEMPLATES);
+  var p = tpl.build();
+  p.company = pick(tpl.names);
+  p.descr = tpl.descr;
+  p.template = tpl.id;
+  p.date = pick(BANK.dates);
+  return p;
 }
 
 function startTransactions(mode) {
   var isDrop = mode.variant === "dropdown";
   var prob = makeTransactions();
-  var K = prob.keys;
   var wrap = document.createElement("div");
 
   var bar = h('<div class="topbar"></div>');
@@ -2066,19 +2394,114 @@ function startTransactions(mode) {
   wrap.appendChild(bar);
 
   wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
-    '<p class="ask" style="margin-top:0;margin-bottom:11px">Entered into the following transactions during the first year of its operations:</p>' +
+    '<p class="ask" style="margin-top:0;margin-bottom:11px">' + escapeHtml(prob.descr.charAt(0).toUpperCase() + prob.descr.slice(1)) +
+    ", entered into the following transactions during the first year of its operations:</p>" +
     '<ol class="txn-list">' + prob.txns.map(function (t) { return "<li>" + escapeHtml(t) + "</li>"; }).join("") + "</ol>" +
-    '<p class="ask">Prepare the income statement and the year-end balance sheet. Do the income statement first: retained earnings on the balance sheet needs net income, and this is the company\'s first year, so retained earnings starts at zero.</p></div>'));
+    '<p class="ask">Journalize each transaction, then prepare the income statement and the year-end balance sheet. ' +
+    "Do the income statement before the balance sheet: retained earnings needs net income, and since this is the company's first year, retained earnings starts at zero.</p></div>"));
 
-  var groups = {
-    rev: [K.rev], exp: [K.rent, K.misc, K.loss],
-    asset: [K.cash, K.ar, K.land], liab: [K.np], eq: [K.cs, K.re]
-  };
+  // every account that appears anywhere in this problem, for the dropdown and for typo checking
+  var used = [], allAliases = [];
+  prob.entries.forEach(function (e) {
+    e.lines.forEach(function (l) {
+      if (used.indexOf(l.a.label) === -1) { used.push(l.a.label); allAliases.push(l.a.alias); }
+    });
+  });
+  var labelPool = used.concat(shuffle(TX_DISTRACTORS).slice(0, 4));
+
+  /* ---- step 1: journal ---- */
+  var jeCard = h('<div class="exam-card" style="padding-top:18px;margin-bottom:26px"></div>');
+  jeCard.appendChild(h('<p class="step-label">Step 1: Journalize each transaction <span>Debits first, credits indented. Amount in one column, other column blank.</span></p>'));
+  var jeTable = h('<table class="je-table"><thead><tr><th>Ref</th><th>Description</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead><tbody></tbody></table>');
+  var jeBody = jeTable.querySelector("tbody");
+  var jeLines = [];
+
+  function acctField(cls) {
+    if (isDrop) {
+      var sel = document.createElement("select");
+      sel.className = cls;
+      sel.innerHTML = '<option value="">Select account</option>' + shuffle(labelPool).map(function (o) {
+        return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
+      }).join("");
+      return sel;
+    }
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = cls;
+    inp.placeholder = "Account name";
+    inp.autocomplete = "off";
+    inp.spellcheck = false;
+    return inp;
+  }
+
+  prob.entries.forEach(function (e, i) {
+    e.lines.forEach(function (l, li) {
+      var tr = document.createElement("tr");
+      if (l.s === "cr") tr.className = "cr-line";
+      var tdRef = document.createElement("td");
+      tdRef.className = "je-ref";
+      if (li === 0) tdRef.textContent = "(" + (i + 1) + ")";
+      var tdAcct = document.createElement("td");
+      tdAcct.className = "je-acct";
+      var af = acctField("je-acct-field");
+      tdAcct.appendChild(af);
+      var mk = function () {
+        var inp = document.createElement("input");
+        inp.type = "text";
+        inp.className = "je-input";
+        inp.autocomplete = "off";
+        inp.addEventListener("input", recalcJournal);
+        return inp;
+      };
+      var tdDr = document.createElement("td");
+      tdDr.className = "je-num";
+      var dIn = mk();
+      tdDr.appendChild(dIn);
+      var tdCr = document.createElement("td");
+      tdCr.className = "je-num";
+      var cIn = mk();
+      tdCr.appendChild(cIn);
+      tr.appendChild(tdRef); tr.appendChild(tdAcct); tr.appendChild(tdDr); tr.appendChild(tdCr);
+      jeBody.appendChild(tr);
+      jeLines.push({ entry: i, acct: af, dr: dIn, cr: cIn });
+    });
+    var memoTr = document.createElement("tr");
+    memoTr.className = "memo-row";
+    var pad = document.createElement("td");
+    var memoTd = document.createElement("td");
+    memoTd.colSpan = 3;
+    memoTd.innerHTML = '<span class="je-memo">' + escapeHtml(e.memo) + "</span>";
+    memoTr.appendChild(pad); memoTr.appendChild(memoTd);
+    jeBody.appendChild(memoTr);
+  });
+  jeCard.appendChild(jeTable);
+  var jeTotals = h('<div class="je-totals"><div>Total debits <span id="jtd">0</span></div><div>Total credits <span id="jtc">0</span></div></div>');
+  jeCard.appendChild(jeTotals);
+  var jeNote = h('<p class="tie-note" hidden></p>');
+  jeCard.appendChild(jeNote);
+  wrap.appendChild(jeCard);
+
+  function recalcJournal() {
+    var td = 0, tc = 0, any = false;
+    jeLines.forEach(function (l) {
+      var d = parseAmt(l.dr.value), c = parseAmt(l.cr.value);
+      if (!isNaN(d)) td += d;
+      if (!isNaN(c)) tc += c;
+      if (l.dr.value.trim() !== "" || l.cr.value.trim() !== "") any = true;
+    });
+    jeTotals.querySelector("#jtd").textContent = fmt(td);
+    jeTotals.querySelector("#jtc").textContent = fmt(tc);
+    if (!any) { jeNote.hidden = true; return; }
+    jeNote.hidden = false;
+    jeNote.className = "tie-note " + (td === tc ? "ok" : "bad");
+    jeNote.textContent = td === tc
+      ? "Debits equal credits at " + fmt(td) + "."
+      : "Debits and credits do not agree: " + fmt(td) + " versus " + fmt(tc) + ", off by " + fmt(Math.abs(td - tc)) + ".";
+  }
+
+  /* ---- steps 2 and 3: the statements ---- */
+  var groups = { rev: prob.is.rev, exp: prob.is.exp, asset: prob.bs.asset, liab: prob.bs.liab, eq: prob.bs.eq };
   var amtFields = {}, lblFields = {}, calcCells = {}, rowGroup = {};
-
-  var labelPool = [];
-  Object.keys(TX_ACCTS).forEach(function (k) { labelPool.push(TX_ACCTS[k].label); });
-  labelPool = labelPool.concat(TX_DISTRACTORS);
 
   function buildTable(rows) {
     var table = h('<table class="stmt-table"><tbody></tbody></table>');
@@ -2096,30 +2519,15 @@ function startTransactions(mode) {
         cls.push("head-row");
         tdL.textContent = r.text;
       } else if (r.t === "in") {
-        if (isDrop) {
-          var sel = document.createElement("select");
-          sel.className = "lbl-select";
-          sel.innerHTML = '<option value="">Select account</option>' + shuffle(labelPool).map(function (o) {
-            return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
-          }).join("");
-          tdL.appendChild(sel);
-          lblFields[r.key] = sel;
-        } else {
-          var li = document.createElement("input");
-          li.type = "text";
-          li.className = "lbl-input";
-          li.placeholder = "Account name";
-          li.autocomplete = "off";
-          li.spellcheck = false;
-          tdL.appendChild(li);
-          lblFields[r.key] = li;
-        }
+        var lf = acctField(isDrop ? "lbl-select" : "lbl-input");
+        tdL.appendChild(lf);
+        lblFields[r.key] = lf;
         var ai = document.createElement("input");
         ai.type = "text";
         ai.className = "amt-input";
         ai.placeholder = "0";
         ai.autocomplete = "off";
-        ai.addEventListener("input", recalc);
+        ai.addEventListener("input", recalcStatements);
         tdA.appendChild(ai);
         amtFields[r.key] = ai;
         rowGroup[r.key] = r.grp;
@@ -2137,48 +2545,47 @@ function startTransactions(mode) {
     return table;
   }
 
-  var isCard = h('<div class="exam-card" style="padding-top:0;margin-bottom:26px"></div>');
+  var isRows = [{ t: "in", key: "rev", grp: "rev" }];
+  prob.is.exp.forEach(function (_, i) { isRows.push({ t: "in", key: "e" + i, grp: "exp" }); });
+  isRows.push({ t: "calc", calc: "ni", text: "Net income", cls: "grand" });
+
+  var bsRows = [{ t: "head", text: "Assets" }];
+  prob.bs.asset.forEach(function (_, i) { bsRows.push({ t: "in", key: "a" + i, grp: "asset", indent: true }); });
+  bsRows.push({ t: "calc", calc: "ta", text: "Total assets", cls: "grand" });
+  bsRows.push({ t: "head", text: "Liabilities and stockholders' equity" });
+  prob.bs.liab.forEach(function (_, i) { bsRows.push({ t: "in", key: "l" + i, grp: "liab", indent: true }); });
+  prob.bs.eq.forEach(function (_, i) { bsRows.push({ t: "in", key: "q" + i, grp: "eq", indent: true }); });
+  bsRows.push({ t: "calc", calc: "tle", text: "Total liabilities and stockholders' equity", cls: "grand" });
+
+  var isCard = h('<div class="exam-card" style="padding-top:18px;margin-bottom:26px"></div>');
+  isCard.appendChild(h('<p class="step-label">Step 2: Income statement <span>Enter expenses as positive numbers; they get subtracted for you.</span></p>'));
   isCard.appendChild(h('<div class="stmt-head">' + escapeHtml(prob.company) + "<span>Income Statement</span><span>For the Year Ended " + escapeHtml(prob.date) + "</span></div>"));
-  isCard.appendChild(buildTable([
-    { t: "in", key: "rev", grp: "rev" },
-    { t: "in", key: "e1", grp: "exp" },
-    { t: "in", key: "e2", grp: "exp" },
-    { t: "in", key: "e3", grp: "exp" },
-    { t: "calc", calc: "ni", text: "Net income", cls: "grand" }
-  ]));
+  isCard.appendChild(buildTable(isRows));
   var niNote = h('<p class="tie-note" hidden></p>');
   isCard.appendChild(niNote);
   wrap.appendChild(isCard);
 
-  var bsCard = h('<div class="exam-card" style="padding-top:0"></div>');
+  var bsCard = h('<div class="exam-card" style="padding-top:18px"></div>');
+  bsCard.appendChild(h('<p class="step-label">Step 3: Balance sheet <span>Retained earnings is net income less the dividend.</span></p>'));
   bsCard.appendChild(h('<div class="stmt-head">' + escapeHtml(prob.company) + "<span>Balance Sheet</span><span>" + escapeHtml(prob.date) + "</span></div>"));
-  bsCard.appendChild(buildTable([
-    { t: "head", text: "Assets" },
-    { t: "in", key: "a1", grp: "asset", indent: true },
-    { t: "in", key: "a2", grp: "asset", indent: true },
-    { t: "in", key: "a3", grp: "asset", indent: true },
-    { t: "calc", calc: "ta", text: "Total assets", cls: "grand" },
-    { t: "head", text: "Liabilities and stockholders' equity" },
-    { t: "in", key: "l1", grp: "liab", indent: true },
-    { t: "in", key: "q1", grp: "eq", indent: true },
-    { t: "in", key: "q2", grp: "eq", indent: true },
-    { t: "calc", calc: "tle", text: "Total liabilities and stockholders' equity", cls: "grand" }
-  ]));
+  bsCard.appendChild(buildTable(bsRows));
   var tieNote = h('<p class="tie-note" hidden></p>');
   bsCard.appendChild(tieNote);
   wrap.appendChild(bsCard);
 
   function val(k) { var v = parseAmt(amtFields[k].value); return isNaN(v) ? 0 : v; }
-  function filled(keys) { return keys.some(function (k) { return amtFields[k].value.trim() !== ""; }); }
+  function keysOf(grp) { return Object.keys(rowGroup).filter(function (k) { return rowGroup[k] === grp; }); }
+  function sumGrp(grp) { return keysOf(grp).reduce(function (t, k) { return t + val(k); }, 0); }
+  function anyGrp(grps) { return grps.some(function (g) { return keysOf(g).some(function (k) { return amtFields[k].value.trim() !== ""; }); }); }
 
-  function recalc() {
-    var ni = val("rev") - val("e1") - val("e2") - val("e3");
-    var ta = val("a1") + val("a2") + val("a3");
-    var tle = val("l1") + val("q1") + val("q2");
-    calcCells.ni.textContent = filled(["rev", "e1", "e2", "e3"]) ? fmt(ni) : "\u2014";
-    calcCells.ta.textContent = filled(["a1", "a2", "a3"]) ? fmt(ta) : "\u2014";
-    calcCells.tle.textContent = filled(["l1", "q1", "q2"]) ? fmt(tle) : "\u2014";
-    if (filled(["rev", "e1", "e2", "e3"])) {
+  function recalcStatements() {
+    var ni = sumGrp("rev") - sumGrp("exp");
+    var ta = sumGrp("asset");
+    var tle = sumGrp("liab") + sumGrp("eq");
+    calcCells.ni.textContent = anyGrp(["rev", "exp"]) ? fmt(ni) : "\u2014";
+    calcCells.ta.textContent = anyGrp(["asset"]) ? fmt(ta) : "\u2014";
+    calcCells.tle.textContent = anyGrp(["liab", "eq"]) ? fmt(tle) : "\u2014";
+    if (anyGrp(["rev", "exp"])) {
       niNote.hidden = false;
       niNote.className = "tie-note " + (ni >= 0 ? "ok" : "bad");
       niNote.textContent = ni >= 0
@@ -2186,7 +2593,7 @@ function startTransactions(mode) {
         : "That is a net loss of " + fmt(Math.abs(ni)) + ".";
     } else { niNote.hidden = true; }
     ["ta", "tle"].forEach(function (n) { calcCells[n].classList.remove("tie", "notie"); });
-    if (filled(["a1", "a2", "a3"]) && filled(["l1", "q1", "q2"])) {
+    if (anyGrp(["asset"]) && anyGrp(["liab", "eq"])) {
       var bal = ta === tle;
       ["ta", "tle"].forEach(function (n) { calcCells[n].classList.add(bal ? "tie" : "notie"); });
       tieNote.hidden = false;
@@ -2197,57 +2604,116 @@ function startTransactions(mode) {
     } else { tieNote.hidden = true; }
   }
 
+  /* ---- grading ---- */
   var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
-  var scoreLbl = h('<div class="topbar-label"></div>');
+  var scoreLbl = h('<div class="score-split"></div>');
   var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
+
+  function matchAccount(typed, target, competitors) {
+    if (isDrop) return typed === target.label;
+    return matchExclusive(typed, target.alias, competitors);
+  }
+
   checkBtn.addEventListener("click", function () {
-    var right = 0, total = 0;
-    var claimed = {};
-    Object.keys(groups).forEach(function (g) { claimed[g] = []; });
+    // step 1: journal, matched as a set within each entry so swapping two debit lines is fine
+    var jRight = 0, jTotal = 0;
+    prob.entries.forEach(function (e, ei) {
+      var rows = jeLines.filter(function (l) { return l.entry === ei; });
+      var claimed = [];
+      rows.forEach(function (l) {
+        jTotal += 2;
+        var hit = null, bestD = Infinity;
+        for (var i = 0; i < e.lines.length; i++) {
+          if (claimed.indexOf(i) !== -1) continue;
+          var d;
+          if (isDrop) d = (l.acct.value === e.lines[i].a.label) ? 0 : Infinity;
+          else d = aliasDistance(l.acct.value, e.lines[i].a.alias);
+          if (d < bestD) { bestD = d; hit = i; }
+        }
+        if (bestD === Infinity) hit = null;
+        else if (!isDrop && bestD > 0) {
+          var chosen = e.lines[hit].a;
+          for (var q = 0; q < allAliases.length; q++) {
+            if (allAliases[q] !== chosen.alias && aliasDistance(l.acct.value, allAliases[q]) < bestD) { hit = null; break; }
+          }
+        }
+        var acctOk = hit !== null;
+        if (acctOk) claimed.push(hit);
+        l.acct.classList.remove("right", "wrong");
+        l.acct.classList.add(acctOk ? "right" : "wrong");
+        if (acctOk) jRight++;
+        var amtOk = false;
+        if (acctOk) {
+          var exp = e.lines[hit];
+          var filledBox = exp.s === "dr" ? l.dr : l.cr;
+          var emptyBox = exp.s === "dr" ? l.cr : l.dr;
+          var emptyOk = emptyBox.value.trim() === "" || parseAmt(emptyBox.value) === 0;
+          amtOk = parseAmt(filledBox.value) === exp.v && emptyOk;
+        }
+        [l.dr, l.cr].forEach(function (f) { f.classList.remove("right", "wrong"); f.classList.add(amtOk ? "right" : "wrong"); });
+        if (amtOk) jRight++;
+      });
+    });
+
+    // steps 2 and 3: statements, matched as a set within each section
+    var sRight = 0, sTotal = 0;
+    var claimedBy = {};
+    Object.keys(groups).forEach(function (g) { claimedBy[g] = []; });
     Object.keys(amtFields).forEach(function (k) {
       var g = rowGroup[k], pool = groups[g];
-      total += 2;
+      sTotal += 2;
       var lf = lblFields[k], af = amtFields[k];
-      var hit = null;
+      var hit = null, bestD = Infinity;
       for (var i = 0; i < pool.length; i++) {
-        if (claimed[g].indexOf(i) !== -1) continue;
-        var ok = isDrop ? (lf.value === pool[i].a.label) : matchText(lf.value, pool[i].a.alias);
-        if (ok) { hit = i; break; }
+        if (claimedBy[g].indexOf(i) !== -1) continue;
+        var d;
+        if (isDrop) d = (lf.value === pool[i].a.label) ? 0 : Infinity;
+        else d = aliasDistance(lf.value, pool[i].a.alias);
+        if (d < bestD) { bestD = d; hit = i; }
+      }
+      if (bestD === Infinity) hit = null;
+      else if (!isDrop && bestD > 0) {
+        var chosen = pool[hit].a;
+        for (var q = 0; q < allAliases.length; q++) {
+          if (allAliases[q] !== chosen.alias && aliasDistance(lf.value, allAliases[q]) < bestD) { hit = null; break; }
+        }
       }
       var lblOk = hit !== null;
-      if (lblOk) claimed[g].push(hit);
+      if (lblOk) claimedBy[g].push(hit);
       lf.classList.remove("right", "wrong");
       lf.classList.add(lblOk ? "right" : "wrong");
-      if (lblOk) right++;
+      if (lblOk) sRight++;
       var amtOk = lblOk && parseAmt(af.value) === pool[hit].v;
       af.classList.remove("right", "wrong");
       af.classList.add(amtOk ? "right" : "wrong");
-      if (amtOk) right++;
+      if (amtOk) sRight++;
     });
-    scoreLbl.textContent = right + " of " + total + " boxes correct";
+
+    scoreLbl.innerHTML = "Journal entries: <strong>" + jRight + " of " + jTotal + "</strong><br>Statements: <strong>" + sRight + " of " + sTotal + "</strong>";
 
     var n = prob.n;
     var existing = wrap.querySelector(".review");
     if (existing) existing.remove();
     var key = h('<div class="review" style="margin-top:26px"></div>');
     key.appendChild(h('<h3 class="review-heading">Answer key</h3>'));
-    key.appendChild(h('<div class="review-item">' +
-      '<p class="review-correct">Income statement: service revenue ' + fmt(n.rev) + " (cash " + fmt(n.svcCash) + " plus receivables " + fmt(n.svcAr) +
-      "), rent expense " + fmt(n.rent) + ", miscellaneous expense " + fmt(n.misc) + ", loss on sale of land " + fmt(n.loss) + ", net income " + fmt(n.ni) + "</p>" +
+    var jeKey = prob.entries.map(function (e, i) {
+      var drs = e.lines.filter(function (l) { return l.s === "dr"; }).map(function (l) { return "Dr " + l.a.label + " " + fmt(l.v); });
+      var crs = e.lines.filter(function (l) { return l.s === "cr"; }).map(function (l) { return "Cr " + l.a.label + " " + fmt(l.v); });
+      return '<p class="review-correct">(' + (i + 1) + ") " + escapeHtml(drs.concat(crs).join(", ")) + "</p>";
+    }).join("");
+    var line = function (arr) { return arr.map(function (x) { return x.a.label + " " + fmt(x.v); }).join(", "); };
+    key.appendChild(h('<div class="review-item">' + jeKey +
+      '<p class="review-correct" style="margin-top:11px">Income statement: ' + escapeHtml(line(prob.is.rev)) + " less " + escapeHtml(line(prob.is.exp)) + ", net income " + fmt(n.ni) + "</p>" +
       '<p class="review-correct">Retained earnings: net income ' + fmt(n.ni) + " minus the dividend of " + fmt(n.div) + " equals " + fmt(n.re) + ", starting from zero in year one</p>" +
-      '<p class="review-correct">Cash ' + fmt(n.cash) + " = " + fmt(n.cs) + " in + " + fmt(n.np) + " in - " + fmt(n.land) + " land - " + fmt(n.rent) +
-      " rent + " + fmt(n.svcCash) + " services - " + fmt(n.misc) + " misc + " + fmt(n.parcelPrice) + " parcel sale - " + fmt(n.div) + " dividend</p>" +
-      '<p class="review-correct">Balance sheet: cash ' + fmt(n.cash) + ", accounts receivable " + fmt(n.svcAr) + ", land " + fmt(n.landLeft) +
-      ", total assets " + fmt(n.ta) + "; notes payable " + fmt(n.np) + ", common stock " + fmt(n.cs) + ", retained earnings " + fmt(n.re) + "</p>" +
-      '<p class="review-explain">Four places this problem tries to catch you. The receivable is revenue the moment the service is delivered, so revenue is ' + fmt(n.rev) +
-      " even though only " + fmt(n.svcCash) + " came in as cash. Renting the camera equipment for the remainder of the year means it is fully used up, so it is rent expense, not equipment and not prepaid rent. " +
-      "Land drops to " + fmt(n.landLeft) + " because one parcel costing " + fmt(n.parcelCost) + " is gone, and selling it for " + fmt(n.parcelPrice) +
-      " creates a loss of " + fmt(n.loss) + " on the income statement rather than revenue. " +
-      "And the dividend of " + fmt(n.div) + " never touches the income statement: it reduces retained earnings, which is why net income and retained earnings are different numbers.</p></div>"));
+      '<p class="review-correct">Balance sheet assets: ' + escapeHtml(line(prob.bs.asset)) + "</p>" +
+      '<p class="review-correct">Liabilities and equity: ' + escapeHtml(line(prob.bs.liab)) + ", " + escapeHtml(line(prob.bs.eq)) + "</p>" +
+      '<p class="review-explain">' + prob.notes +
+      " And the dividend of " + fmt(n.div) + " never touches the income statement: it reduces retained earnings, which is why net income and retained earnings are different numbers.</p></div>"));
     wrap.appendChild(key);
     scrollTop();
   });
-  var newNums = h('<button type="button" class="link-btn">New numbers</button>');
+
+  var newNums = h('<button type="button" class="link-btn">New problem</button>');
   newNums.addEventListener("click", function () { startTransactions(mode); });
   sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
