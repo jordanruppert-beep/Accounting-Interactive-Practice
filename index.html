@@ -368,6 +368,17 @@ input, select { font-family: inherit; }
 .eq-select.wrong { border-color: var(--red); background: var(--red-bg); }
 @media (max-width: 640px) { .eq-select { min-width: 0; flex: 1 1 128px; font-size: 13.5px; } }
 
+/* given trial balance block */
+.bal-table { width: 100%; max-width: 430px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; margin: 4px 0 6px; }
+.bal-table th {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gold);
+  font-weight: 700; padding: 0 8px 8px; border-bottom: 1.5px solid var(--gold-soft); text-align: left;
+}
+.bal-table th.num, .bal-table td.num { text-align: right; width: 92px; }
+.bal-table td { padding: 6px 8px; border-bottom: 1px solid var(--card-border); }
+.bal-table tr:last-child td { border-bottom: none; }
+@media (max-width: 640px) { .bal-table { font-size: 13px; } .bal-table th.num, .bal-table td.num { width: 74px; } }
+
 /* results */
 .results-card {
   background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
@@ -414,7 +425,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       <span class="brand-mark">$</span>
       <div class="brand-text">
         <h1>ACG5026 - Practice</h1>
-        <p>Will continue to be built out as the course goes on. Last edited August 31st.</p>
+        <p>Will continue to be built out as the course goes on. Last edited September 1st.</p>
         <p class="brand-by">Created by Jordan Ruppert</p>
       </div>
     </div>
@@ -710,6 +721,8 @@ var MODES = [
   { id: "match",  group: "Chapter 1",  name: "Definition Matching Drill", meta: "10 terms from the homework", kind: "match", tag: "dropdown" },
   { id: "ch2mc",  group: "Chapter 2",  name: "Ch. 2 Definitions and Concepts", meta: "32 questions", kind: "quiz", bank: "ch2mc", type: "mc", tag: "multiple choice" },
   { id: "ch2fib", group: "Chapter 2",  name: "Ch. 2 Definitions and Concepts", meta: "30 questions", kind: "quiz", bank: "ch2fib", type: "fib", tag: "fill in the blank" },
+  { id: "adjdrop", group: "Chapter 3", name: "Preparing and Adjusting Journal Entries", meta: "5 adjustments, new numbers each time", kind: "adj", variant: "dropdown", tag: "dropdown" },
+  { id: "adjblank", group: "Chapter 3", name: "Preparing and Adjusting Journal Entries", meta: "5 adjustments, type every account", kind: "adj", variant: "blank", tag: "fill in the blank" },
   { id: "eqquiz", group: "Statements Equations Quiz", name: "The Three Statement Equations", meta: "Balance sheet, income statement, stockholders' equity", kind: "eq", tag: "dropdown" },
   { id: "bsdrop", group: "Balance Sheet", name: "Balance Sheet Practice", meta: "Classified balance sheet, new numbers each time", kind: "stmt", variant: "dropdown", tag: "dropdown" },
   { id: "bsblank",group: "Balance Sheet", name: "Balance Sheet Practice", meta: "New numbers each time, plus solve for retained earnings", kind: "stmt", variant: "blank", tag: "fill in the blank" },
@@ -765,6 +778,7 @@ function launch(mode) {
   else if (mode.kind === "cash") startCashFlow(mode);
   else if (mode.kind === "drcr") startDrCr(mode);
   else if (mode.kind === "eq") startEquations(mode);
+  else if (mode.kind === "adj") startAdjusting(mode);
   else if (mode.kind === "classify") startClassify(mode);
   else if (mode.kind === "journal") startJournal(mode);
   else if (mode.kind === "tx") startTransactions(mode);
@@ -2851,6 +2865,281 @@ function startEquations(mode) {
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
   nav.appendChild(again);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+
+/* ---------- chapter 3: adjusting journal entries ---------- */
+var ADJ_ACCOUNTS = {
+  insExp: { label: "Insurance expense", alias: ["insurance expense", "insurance"] },
+  prepaid: { label: "Prepaid insurance", alias: ["prepaid insurance", "prepaid expense", "prepaid expenses", "prepaid"] },
+  supExp: { label: "Supplies expense", alias: ["supplies expense", "supply expense", "supplies used"] },
+  supInv: { label: "Supplies inventory", alias: ["supplies inventory", "supplies", "supplies on hand", "office supplies"] },
+  deprExp: { label: "Depreciation expense", alias: ["depreciation expense", "depreciation"] },
+  accDepr: { label: "Accumulated depreciation", alias: ["accumulated depreciation", "accum depreciation", "accumulated depr"] },
+  unearned: { label: "Unearned rent liability", alias: ["unearned rent liability", "unearned rent", "unearned revenue", "deferred rent", "unearned rent revenue"] },
+  rentRev: { label: "Rent revenue", alias: ["rent revenue", "rental revenue", "rent earned", "rent income"] },
+  salExp: { label: "Salaries expense", alias: ["salaries expense", "salary expense", "salaries", "wages expense"] },
+  salPay: { label: "Salaries payable", alias: ["salaries payable", "salary payable", "wages payable", "accrued salaries"] }
+};
+
+// the wrong turns that matter: adjusting entries never touch cash, and depreciation
+// never credits the asset account directly
+// Cash and Office equipment are always offered: they are the two mistakes worth catching
+var ADJ_ALWAYS_DISTRACTORS = ["Cash", "Office equipment"];
+var ADJ_DISTRACTORS = ["Accounts receivable", "Accounts payable", "Retained earnings", "Rent expense", "Insurance payable"];
+
+var ADJ_FIRMS = [
+  { n: "Ideal Properties", d: "a real estate management firm" },
+  { n: "Cornerstone Realty", d: "a commercial property manager" },
+  { n: "Beacon Property Group", d: "a residential leasing company" },
+  { n: "Waverly Management", d: "a real estate management firm" },
+  { n: "Ashgrove Properties", d: "an office park operator" }
+];
+
+function makeAdjusting() {
+  var A = ADJ_ACCOUNTS, n = {};
+  n.insMonthly = rnd(150, 400, 25);
+  n.insYears = pick([2, 3]);
+  n.premium = n.insMonthly * 12 * n.insYears;
+  n.supBegin = rnd(1800, 4200, 5);
+  n.supLeft = rnd(600, n.supBegin - 700, 5);
+  n.supUsed = n.supBegin - n.supLeft;
+  n.deprMonthly = rnd(60, 160, 1);
+  n.life = rnd(5, 10, 1);
+  n.equipCost = n.deprMonthly * 12 * n.life;
+  n.deprAnnual = n.deprMonthly * 12;
+  n.rentRate = rnd(900, 2200, 10);
+  n.rentMonths = pick([4, 5, 6]);
+  n.unearnedBal = n.rentRate * n.rentMonths;
+  n.salAccrued = rnd(400, 1400, 5);
+  n.salExpBal = rnd(3000, 9000, 50);
+  n.rentRevBal = rnd(12000, 30000, 100);
+
+  var firm = pick(ADJ_FIRMS);
+  return {
+    company: firm.n,
+    descr: firm.d,
+    n: n,
+    balances: [
+      ["Prepaid insurance", n.premium, "dr"],
+      ["Supplies inventory", n.supBegin, "dr"],
+      ["Office equipment", n.equipCost, "dr"],
+      ["Unearned rent liability", n.unearnedBal, "cr"],
+      ["Salaries expense", n.salExpBal, "dr"],
+      ["Rent revenue", n.rentRevBal, "cr"]
+    ],
+    facts: [
+      "Prepaid insurance represents a " + n.insYears + "-year premium paid on January 1.",
+      "Supplies of $" + fmt(n.supLeft) + " were still available on January 31.",
+      "Office equipment purchased on January 1 is expected to last " + n.life + " years. Round to the nearest whole number.",
+      "On January 1, " + firm.n + " collected " + n.rentMonths + " months' rent in advance from a tenant renting space for $" + fmt(n.rentRate) + " per month.",
+      "Accrued employee salaries of $" + fmt(n.salAccrued) + " have not been recorded as of January 31."
+    ],
+    entries: [
+      { memo: "To record adjustment for insurance.", lines: [{ a: A.insExp, v: n.insMonthly, s: "dr" }, { a: A.prepaid, v: n.insMonthly, s: "cr" }] },
+      { memo: "To record adjustment for supplies.", lines: [{ a: A.supExp, v: n.supUsed, s: "dr" }, { a: A.supInv, v: n.supUsed, s: "cr" }] },
+      { memo: "To record adjustment for equipment.", lines: [{ a: A.deprExp, v: n.deprMonthly, s: "dr" }, { a: A.accDepr, v: n.deprMonthly, s: "cr" }] },
+      { memo: "To record adjustment for rent advance.", lines: [{ a: A.unearned, v: n.rentRate, s: "dr" }, { a: A.rentRev, v: n.rentRate, s: "cr" }] },
+      { memo: "To record adjustment for salaries.", lines: [{ a: A.salExp, v: n.salAccrued, s: "dr" }, { a: A.salPay, v: n.salAccrued, s: "cr" }] }
+    ]
+  };
+}
+
+function startAdjusting(mode) {
+  var isDrop = mode.variant === "dropdown";
+  var prob = makeAdjusting();
+  var n = prob.n;
+  var wrap = document.createElement("div");
+
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">5 adjusting entries</div>'));
+  wrap.appendChild(bar);
+
+  var balRows = prob.balances.map(function (b) {
+    return "<tr><td>" + escapeHtml(b[0]) + '</td><td class="num">' + (b[2] === "dr" ? fmt(b[1]) : "") +
+      '</td><td class="num">' + (b[2] === "cr" ? fmt(b[1]) : "") + "</td></tr>";
+  }).join("");
+  wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
+    '<p class="ask" style="margin-top:0;margin-bottom:12px">Selected accounts of ' + escapeHtml(prob.company) + ", " + escapeHtml(prob.descr) +
+    ", are shown below as of January 31 before any adjusting entries have been made.</p>" +
+    '<table class="bal-table"><thead><tr><th>Unadjusted account balances</th><th class="num">Debits</th><th class="num">Credits</th></tr></thead><tbody>' +
+    balRows + "</tbody></table>" +
+    '<p class="ask" style="margin-top:13px;margin-bottom:9px"><strong>Monthly</strong> financial statements are prepared. Using the following information, prepare the adjusting entries necessary on January 31.</p>' +
+    '<ol class="txn-list">' + prob.facts.map(function (f) { return "<li>" + escapeHtml(f) + "</li>"; }).join("") + "</ol>" +
+    '<p class="ask">Debit line first, credit line indented underneath' + (isDrop ? " (pick each account from the dropdown)" : " (type each account name yourself)") +
+    ". Because the statements are monthly, every adjustment covers one month, not a full year.</p></div>"));
+
+  var used = [], allAliases = [];
+  prob.entries.forEach(function (e) {
+    e.lines.forEach(function (l) {
+      if (used.indexOf(l.a.label) === -1) { used.push(l.a.label); allAliases.push(l.a.alias); }
+    });
+  });
+  var labelPool = used.concat(ADJ_ALWAYS_DISTRACTORS).concat(shuffle(ADJ_DISTRACTORS).slice(0, 2));
+
+  var card = h('<div class="exam-card" style="padding-top:18px"></div>');
+  var table = h('<table class="je-table"><thead><tr><th>Ref</th><th>Account</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead><tbody></tbody></table>');
+  var tbody = table.querySelector("tbody");
+  var lines = [];
+
+  function acctField() {
+    if (isDrop) {
+      var sel = document.createElement("select");
+      sel.className = "je-acct-field";
+      sel.innerHTML = '<option value="">Select account</option>' + shuffle(labelPool).map(function (o) {
+        return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
+      }).join("");
+      return sel;
+    }
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "je-acct-field";
+    inp.placeholder = "Account name";
+    inp.autocomplete = "off";
+    inp.spellcheck = false;
+    return inp;
+  }
+
+  prob.entries.forEach(function (e, i) {
+    e.lines.forEach(function (l, li) {
+      var tr = document.createElement("tr");
+      if (l.s === "cr") tr.className = "cr-line";
+      var tdRef = document.createElement("td");
+      tdRef.className = "je-ref";
+      if (li === 0) tdRef.textContent = "(" + (i + 1) + ")";
+      var tdAcct = document.createElement("td");
+      tdAcct.className = "je-acct";
+      var af = acctField();
+      tdAcct.appendChild(af);
+      var mk = function () {
+        var inp = document.createElement("input");
+        inp.type = "text";
+        inp.className = "je-input";
+        inp.autocomplete = "off";
+        inp.addEventListener("input", recalc);
+        return inp;
+      };
+      var tdDr = document.createElement("td");
+      tdDr.className = "je-num";
+      var dIn = mk();
+      tdDr.appendChild(dIn);
+      var tdCr = document.createElement("td");
+      tdCr.className = "je-num";
+      var cIn = mk();
+      tdCr.appendChild(cIn);
+      tr.appendChild(tdRef); tr.appendChild(tdAcct); tr.appendChild(tdDr); tr.appendChild(tdCr);
+      tbody.appendChild(tr);
+      lines.push({ entry: i, acct: af, dr: dIn, cr: cIn });
+    });
+    var memoTr = document.createElement("tr");
+    memoTr.className = "memo-row";
+    var pad = document.createElement("td");
+    var memoTd = document.createElement("td");
+    memoTd.colSpan = 3;
+    memoTd.innerHTML = '<span class="je-memo">' + escapeHtml(e.memo) + "</span>";
+    memoTr.appendChild(pad); memoTr.appendChild(memoTd);
+    tbody.appendChild(memoTr);
+  });
+  card.appendChild(table);
+  var totals = h('<div class="je-totals"><div>Total debits <span id="atd">0</span></div><div>Total credits <span id="atc">0</span></div></div>');
+  card.appendChild(totals);
+  var tieNote = h('<p class="tie-note" hidden></p>');
+  card.appendChild(tieNote);
+  wrap.appendChild(card);
+
+  function recalc() {
+    var td = 0, tc = 0, any = false;
+    lines.forEach(function (l) {
+      var d = parseAmt(l.dr.value), c = parseAmt(l.cr.value);
+      if (!isNaN(d)) td += d;
+      if (!isNaN(c)) tc += c;
+      if (l.dr.value.trim() !== "" || l.cr.value.trim() !== "") any = true;
+    });
+    totals.querySelector("#atd").textContent = fmt(td);
+    totals.querySelector("#atc").textContent = fmt(tc);
+    if (!any) { tieNote.hidden = true; return; }
+    tieNote.hidden = false;
+    tieNote.className = "tie-note " + (td === tc ? "ok" : "bad");
+    tieNote.textContent = td === tc
+      ? "Debits equal credits at " + fmt(td) + "."
+      : "Debits and credits do not agree: " + fmt(td) + " versus " + fmt(tc) + ", off by " + fmt(Math.abs(td - tc)) + ".";
+  }
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var scoreLbl = h('<div class="topbar-label"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
+  checkBtn.addEventListener("click", function () {
+    var right = 0, total = 0;
+    prob.entries.forEach(function (e, ei) {
+      var rows = lines.filter(function (l) { return l.entry === ei; });
+      var claimed = [];
+      rows.forEach(function (l) {
+        total += 2;
+        var hit = null, bestD = Infinity;
+        for (var i = 0; i < e.lines.length; i++) {
+          if (claimed.indexOf(i) !== -1) continue;
+          var d = isDrop ? (l.acct.value === e.lines[i].a.label ? 0 : Infinity) : aliasDistance(l.acct.value, e.lines[i].a.alias);
+          if (d < bestD) { bestD = d; hit = i; }
+        }
+        if (bestD === Infinity) hit = null;
+        else if (!isDrop && bestD > 0) {
+          var chosen = e.lines[hit].a;
+          for (var q = 0; q < allAliases.length; q++) {
+            if (allAliases[q] !== chosen.alias && aliasDistance(l.acct.value, allAliases[q]) < bestD) { hit = null; break; }
+          }
+        }
+        var acctOk = hit !== null;
+        if (acctOk) claimed.push(hit);
+        l.acct.classList.remove("right", "wrong");
+        l.acct.classList.add(acctOk ? "right" : "wrong");
+        if (acctOk) right++;
+        var amtOk = false;
+        if (acctOk) {
+          var exp = e.lines[hit];
+          var filledBox = exp.s === "dr" ? l.dr : l.cr;
+          var emptyBox = exp.s === "dr" ? l.cr : l.dr;
+          var emptyOk = emptyBox.value.trim() === "" || parseAmt(emptyBox.value) === 0;
+          amtOk = parseAmt(filledBox.value) === exp.v && emptyOk;
+        }
+        [l.dr, l.cr].forEach(function (f) { f.classList.remove("right", "wrong"); f.classList.add(amtOk ? "right" : "wrong"); });
+        if (amtOk) right++;
+      });
+    });
+    scoreLbl.textContent = right + " of " + total + " boxes correct";
+
+    var existing = wrap.querySelector(".review");
+    if (existing) existing.remove();
+    var key = h('<div class="review" style="margin-top:26px"></div>');
+    key.appendChild(h('<h3 class="review-heading">Answer key</h3>'));
+    var rowsHtml = prob.entries.map(function (e, i) {
+      var d = e.lines.filter(function (l) { return l.s === "dr"; })[0];
+      var c = e.lines.filter(function (l) { return l.s === "cr"; })[0];
+      return '<p class="review-correct">(' + (i + 1) + ") Dr " + escapeHtml(d.a.label) + " " + fmt(d.v) + ", Cr " + escapeHtml(c.a.label) + " " + fmt(c.v) + "</p>";
+    }).join("");
+    key.appendChild(h('<div class="review-item">' + rowsHtml +
+      '<p class="review-explain" style="margin-top:11px"><strong>Where the numbers come from.</strong> ' +
+      "Insurance: the premium of " + fmt(n.premium) + " covers " + n.insYears + " years, which is " + (n.insYears * 12) + " months, so one month is " + fmt(n.insMonthly) + ". " +
+      "Supplies: you had " + fmt(n.supBegin) + " and " + fmt(n.supLeft) + " is left, so " + fmt(n.supUsed) + " was used up. " +
+      "Depreciation: " + fmt(n.equipCost) + " over " + n.life + " years is " + fmt(n.deprAnnual) + " a year, and one month of that is " + fmt(n.deprMonthly) + ". " +
+      "Rent: the tenant prepaid " + n.rentMonths + " months at " + fmt(n.rentRate) + ", and one month has now been earned, so " + fmt(n.rentRate) +
+      " moves out of the liability and into revenue. Salaries: the " + fmt(n.salAccrued) + " earned but unpaid is an expense now and a payable until it is paid.</p>" +
+      '<p class="review-explain" style="margin-top:9px"><strong>Three things that trip people up.</strong> ' +
+      "Adjusting entries never touch Cash. Cash moved in the past or will move in the future; the adjustment only fixes the timing of the revenue or expense. " +
+      "Depreciation credits Accumulated depreciation, not Office equipment, because the original cost stays on the books and the contra-asset account holds the wear and tear. " +
+      "And because these are monthly statements, every amount here is one month, so dividing by the full life and stopping is a year too much.</p></div>"));
+    wrap.appendChild(key);
+    scrollTop();
+  });
+  var newNums = h('<button type="button" class="link-btn">New problem</button>');
+  newNums.addEventListener("click", function () { startAdjusting(mode); });
+  sb.appendChild(scoreLbl);
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(newNums);
   wrap.appendChild(nav);
   render(wrap);
 }
