@@ -379,6 +379,57 @@ input, select { font-family: inherit; }
 .bal-table tr:last-child td { border-bottom: none; }
 @media (max-width: 640px) { .bal-table { font-size: 13px; } .bal-table th.num, .bal-table td.num { width: 74px; } }
 
+/* indirect method worksheet */
+.stmt-table tr.indent2 td.lbl { padding-left: 42px; }
+.stmt-table tr.note-row td { font-size: 14px; color: var(--ink-soft); padding-top: 11px; }
+.stmt-table tr.note-row td.lbl { padding-left: 22px; }
+.concl {
+  margin-top: 22px; padding-top: 16px; border-top: 1px dashed var(--card-border);
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-size: 15px;
+}
+.concl select {
+  padding: 7px 9px; font-size: 14.5px; background: #FFFFFF; border: 1.5px solid var(--card-border);
+  border-radius: 4px; cursor: pointer; color: var(--ink);
+}
+.concl select:focus { outline: none; border-color: var(--red); }
+.concl select.right { border-color: var(--green); background: var(--green-bg); }
+.concl select.wrong { border-color: var(--red); background: var(--red-bg); }
+
+/* direct method cash flow */
+.dcf-case { padding: 18px 0 17px; border-bottom: 1px solid var(--card-border); }
+.dcf-case:last-of-type { border-bottom: none; }
+.dcf-title { font-family: 'Spectral', serif; font-weight: 700; font-size: 16px; margin-bottom: 12px; }
+.dcf-sentence { font-size: 14.5px; line-height: 1.85; margin-bottom: 10px; color: var(--ink); }
+.dcf-sentence select {
+  display: inline-block; margin: 0 4px; padding: 6px 8px; font-size: 13.5px;
+  background: #FFFFFF; border: 1.5px solid var(--card-border); border-radius: 4px;
+  cursor: pointer; color: var(--ink); vertical-align: middle;
+}
+.dcf-sentence select:focus { outline: none; border-color: var(--red); }
+.dcf-sentence select.right { border-color: var(--green); background: var(--green-bg); }
+.dcf-sentence select.wrong { border-color: var(--red); background: var(--red-bg); }
+.dcf-answer { display: flex; align-items: center; gap: 9px; margin-top: 9px; font-size: 15px; font-weight: 600; flex-wrap: wrap; }
+.dcf-answer .amt-input { width: 130px; }
+.dcf-facts { width: 100%; max-width: 420px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; margin-bottom: 13px; }
+.dcf-facts td { padding: 6px 8px; border-bottom: 1px solid var(--card-border); }
+.dcf-facts td.num { text-align: right; width: 100px; }
+.dcf-facts tr:last-child td { border-bottom: none; }
+
+.mini-check {
+  flex: none; background: transparent; border: 1.5px solid var(--card-border); color: var(--ink-soft);
+  border-radius: 4px; padding: 6px 13px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  transition: border-color .14s ease, color .14s ease, background .14s ease; white-space: nowrap;
+}
+.mini-check:hover { border-color: var(--gold); color: var(--ink); background: #FFFBEE; }
+.mini-check:active { transform: scale(0.97); }
+.mini-check.checked { border-color: var(--card-border); color: var(--ink-faint); }
+.row-check-wrap { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+.live-score {
+  font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums;
+  background: var(--card); border: 1px solid var(--card-border); border-radius: 4px;
+  padding: 8px 13px; margin-bottom: 16px; display: inline-block;
+}
+
 /* results */
 .results-card {
   background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
@@ -715,6 +766,36 @@ function render(node) {
 }
 
 /* ---------- mode registry ---------- */
+function miniCheckBtn() {
+  var b = document.createElement("button");
+  b.type = "button";
+  b.className = "mini-check";
+  b.textContent = "Check";
+  return b;
+}
+// tracks a running "checked so far" tally across independently-checkable rows/entries.
+// call .track(unit) once per gradable unit; each unit's grade() must return {right, total}
+// and apply its own classList changes. re-checking a unit (after the person edits it) is
+// handled by diffing against that unit's last result, so the tally never double counts.
+function makeLiveScore(totalBoxes) {
+  var checkedBoxes = 0, rightBoxes = 0;
+  var el = h('<div class="live-score"></div>');
+  function render() {
+    el.textContent = checkedBoxes === 0
+      ? totalBoxes + (totalBoxes === 1 ? " box to check" : " boxes to check")
+      : rightBoxes + " of " + checkedBoxes + " correct so far, " + (totalBoxes - checkedBoxes) + " left";
+  }
+  render();
+  function apply(unit, res) {
+    rightBoxes += res.right - (unit._lastRight || 0);
+    checkedBoxes += res.total - (unit._lastTotal || 0);
+    unit._lastRight = res.right;
+    unit._lastTotal = res.total;
+    render();
+  }
+  return { el: el, apply: apply, checkedBoxes: function () { return checkedBoxes; }, rightBoxes: function () { return rightBoxes; } };
+}
+
 var MODES = [
   { id: "ch1mc",  group: "Chapter 1",  name: "Ch. 1 Definitions and Concepts", meta: "42 questions", kind: "quiz", bank: "ch1mc", type: "mc", tag: "multiple choice" },
   { id: "ch1fib", group: "Chapter 1",  name: "Ch. 1 Definitions and Concepts", meta: "38 questions", kind: "quiz", bank: "ch1fib", type: "fib", tag: "fill in the blank" },
@@ -723,6 +804,10 @@ var MODES = [
   { id: "ch2fib", group: "Chapter 2",  name: "Ch. 2 Definitions and Concepts", meta: "30 questions", kind: "quiz", bank: "ch2fib", type: "fib", tag: "fill in the blank" },
   { id: "adjdrop", group: "Chapter 3", name: "Preparing and Adjusting Journal Entries", meta: "5 adjustments, new numbers each time", kind: "adj", variant: "dropdown", tag: "dropdown" },
   { id: "adjblank", group: "Chapter 3", name: "Preparing and Adjusting Journal Entries", meta: "5 adjustments, type every account", kind: "adj", variant: "blank", tag: "fill in the blank" },
+  { id: "ocfdrop", group: "Chapter 4", name: "Net Cash Flow from Operating Activities (Indirect Method)", meta: "Indirect method, new numbers each time", kind: "ocf", variant: "dropdown", tag: "dropdown" },
+  { id: "ocfblank", group: "Chapter 4", name: "Net Cash Flow from Operating Activities (Indirect Method)", meta: "Indirect method, type every line", kind: "ocf", variant: "blank", tag: "fill in the blank" },
+  { id: "dcfdrop", group: "Chapter 4", name: "Operating Cash Flows (Direct Method)", meta: "3 cases, with direction dropdowns", kind: "dcf", variant: "dropdown", tag: "dropdown" },
+  { id: "dcfblank", group: "Chapter 4", name: "Operating Cash Flows (Direct Method)", meta: "3 cases, type every amount", kind: "dcf", variant: "blank", tag: "fill in the blank" },
   { id: "eqquiz", group: "Statements Equations Quiz", name: "The Three Statement Equations", meta: "Balance sheet, income statement, stockholders' equity", kind: "eq", tag: "dropdown" },
   { id: "bsdrop", group: "Balance Sheet", name: "Balance Sheet Practice", meta: "Classified balance sheet, new numbers each time", kind: "stmt", variant: "dropdown", tag: "dropdown" },
   { id: "bsblank",group: "Balance Sheet", name: "Balance Sheet Practice", meta: "New numbers each time, plus solve for retained earnings", kind: "stmt", variant: "blank", tag: "fill in the blank" },
@@ -779,6 +864,8 @@ function launch(mode) {
   else if (mode.kind === "drcr") startDrCr(mode);
   else if (mode.kind === "eq") startEquations(mode);
   else if (mode.kind === "adj") startAdjusting(mode);
+  else if (mode.kind === "ocf") startOperatingCF(mode);
+  else if (mode.kind === "dcf") startDirectCF(mode);
   else if (mode.kind === "classify") startClassify(mode);
   else if (mode.kind === "journal") startJournal(mode);
   else if (mode.kind === "tx") startTransactions(mode);
@@ -932,12 +1019,15 @@ function startMatch(mode) {
   bar.appendChild(h('<div class="topbar-label">10 items</div>'));
   wrap.appendChild(bar);
   wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">Match each description to its term</p>' +
-    '<p class="intro-text">Same ten items as the Chapter 1 homework. Every term is used exactly once.</p></div>'));
+    '<p class="intro-text">Same ten items as the Chapter 1 homework. Every term is used exactly once. Check a row as soon as you answer it, or check everything at once at the bottom.</p></div>'));
+
+  var live = makeLiveScore(10);
+  wrap.appendChild(live.el);
 
   var card = h('<div class="exam-card"></div>');
   var table = h('<table class="drill-table"><thead><tr><th>Description</th><th>Term</th></tr></thead><tbody></tbody></table>');
   var tbody = table.querySelector("tbody");
-  var selects = [];
+  var units = [];
   rows.forEach(function (r, i) {
     var tr = document.createElement("tr");
     var td1 = document.createElement("td");
@@ -949,34 +1039,43 @@ function startMatch(mode) {
       return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
     }).join("");
     var note = h('<p class="row-note" hidden></p>');
+    var checkWrap = h('<div class="row-check-wrap"></div>');
+    var miniBtn = miniCheckBtn();
+    checkWrap.appendChild(miniBtn);
     td2.appendChild(sel);
+    td2.appendChild(checkWrap);
     td2.appendChild(note);
     tr.appendChild(td1); tr.appendChild(td2);
     tbody.appendChild(tr);
-    selects.push({ sel: sel, note: note, row: r });
+
+    var unit = { sel: sel, note: note, row: r };
+    function grade() {
+      var ok = unit.sel.value === unit.row.a;
+      unit.sel.classList.remove("right", "wrong");
+      unit.sel.classList.add(ok ? "right" : "wrong");
+      unit.note.hidden = false;
+      unit.note.className = "row-note" + (ok ? "" : " wrong");
+      unit.note.textContent = ok ? unit.row.e : unit.row.a + ". " + unit.row.e;
+      return { right: ok ? 1 : 0, total: 1 };
+    }
+    miniBtn.addEventListener("click", function () {
+      live.apply(unit, grade());
+      miniBtn.classList.add("checked");
+    });
+    unit.grade = grade;
+    unit.miniBtn = miniBtn;
+    units.push(unit);
   });
   card.appendChild(table);
   wrap.appendChild(card);
 
   var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
-  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check answers</span></button>');
-  var scoreLbl = h('<div class="topbar-label"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
   var reshuffle = h('<button type="button" class="link-btn">Shuffle and retry</button>');
   reshuffle.addEventListener("click", function () { startMatch(mode); });
   checkBtn.addEventListener("click", function () {
-    var right = 0;
-    selects.forEach(function (s) {
-      var ok = s.sel.value === s.row.a;
-      s.sel.classList.remove("right", "wrong");
-      s.sel.classList.add(ok ? "right" : "wrong");
-      s.note.hidden = false;
-      s.note.className = "row-note" + (ok ? "" : " wrong");
-      s.note.textContent = ok ? s.row.e : s.row.a + ". " + s.row.e;
-      if (ok) right++;
-    });
-    scoreLbl.textContent = right + " of 10 correct";
+    units.forEach(function (u) { live.apply(u, u.grade()); u.miniBtn.classList.add("checked"); });
   });
-  sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
   wrap.appendChild(sb);
   var sb2 = h('<div class="nav-row"></div>');
@@ -984,6 +1083,7 @@ function startMatch(mode) {
   wrap.appendChild(sb2);
   render(wrap);
 }
+
 
 /* ---------- balance sheet builder ---------- */
 var BS_ACCOUNTS = {
@@ -1121,24 +1221,26 @@ function startStatement(mode) {
     return "<li>" + escapeHtml(f[0]) + ", $" + fmt(f[1]) + (f[1] < 0 ? " (a deficit)" : "") + "</li>";
   }).join("");
   var ask = isDrop
-    ? "Build the classified balance sheet below. The accounts above are listed in no particular order, so you have to sort them into current assets, noncurrent assets, current liabilities, noncurrent liabilities, and equity yourself. Subtotals and totals add themselves up as you type."
-    : "<strong>Retained earnings is not given.</strong> Build the classified balance sheet below, then solve for retained earnings using the accounting equation. The accounts above are in no particular order, so you have to classify them yourself. Subtotals and totals add themselves up as you type.";
+    ? "Build the classified balance sheet below. The accounts above are listed in no particular order, so you have to sort them into current assets, noncurrent assets, current liabilities, noncurrent liabilities, and equity yourself. Subtotals and totals add themselves up as you type. Check a line as soon as you fill it in, or check everything at once at the bottom."
+    : "<strong>Retained earnings is not given.</strong> Build the classified balance sheet below, then solve for retained earnings using the accounting equation. The accounts above are in no particular order, so you have to classify them yourself. Subtotals and totals add themselves up as you type. Check a line as soon as you fill it in, or check everything at once at the bottom.";
   wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
     '<p class="ask" style="margin-top:0;margin-bottom:11px">' + escapeHtml(prob.descr.charAt(0).toUpperCase() + prob.descr.slice(1)) +
     ", reports the following account balances as of " + escapeHtml(prob.date) + ", in " + prob.unit + ":</p>" +
     "<ul>" + factList + "</ul><p class=\"ask\">" + ask + "</p></div>"));
 
+  var live = makeLiveScore(built.fieldKeys.length * 2);
+  wrap.appendChild(live.el);
+
   var card = h('<div class="exam-card" style="padding-top:0"></div>');
   card.appendChild(h('<div class="stmt-head">' + escapeHtml(prob.company) + "<span>Balance Sheet</span><span>" + escapeHtml(prob.date) + "</span></div>"));
   var table = h('<table class="stmt-table"><tbody></tbody></table>');
   var tbody = table.querySelector("tbody");
-  var amtFields = {}, lblFields = {}, calcCells = {};
+  var amtFields = {}, lblFields = {}, calcCells = {}, miniBtns = {};
 
   var labelPool = [];
   ["ca", "nca", "cl", "ncl", "eq"].forEach(function (sec) {
     prob.sections[sec].forEach(function (r) { labelPool.push(r.label); });
   });
-  // a few plausible wrong turns, all income statement lines
   labelPool = labelPool.concat(shuffle(BS_DISTRACTORS).slice(0, 4));
 
   built.rows.forEach(function (r) {
@@ -1182,6 +1284,9 @@ function startStatement(mode) {
       ai.addEventListener("input", recalc);
       tdA.appendChild(ai);
       amtFields[r.key] = ai;
+      var miniBtn = miniCheckBtn();
+      tdA.appendChild(miniBtn);
+      miniBtns[r.key] = miniBtn;
     } else {
       tdL.textContent = r.text;
       tdA.className = "amt calc-cell";
@@ -1233,53 +1338,72 @@ function startStatement(mode) {
     }
   }
 
+  // per-section claim tracking, shared between individual row checks and the big button,
+  // so two rows can never both take credit for the same account
+  var secOfKey = {};
+  built.fieldKeys.forEach(function (f) { secOfKey[f.key] = f.sec; });
+  var claimedBySection = { ca: [], nca: [], cl: [], ncl: [], eq: [] };
+  var rowClaim = {};
+  var allRows = built.fieldKeys.map(function (f) { return f.row; });
+
+  function gradeRow(k) {
+    var sec = secOfKey[k];
+    var keyRows = built.fieldKeys.filter(function (f) { return f.sec === sec; }).map(function (f) { return f.row; });
+    var claimed = claimedBySection[sec];
+    if (rowClaim[k] !== undefined && rowClaim[k] !== null) {
+      var pos = claimed.indexOf(rowClaim[k]);
+      if (pos !== -1) claimed.splice(pos, 1);
+    }
+    var lf = lblFields[k], af = amtFields[k];
+    var hit = null;
+    if (isDrop) {
+      for (var i = 0; i < keyRows.length; i++) {
+        if (claimed.indexOf(i) === -1 && lf.value === keyRows[i].label) { hit = i; break; }
+      }
+    } else {
+      var bestD = Infinity;
+      for (var j = 0; j < keyRows.length; j++) {
+        if (claimed.indexOf(j) !== -1) continue;
+        var d = aliasDistance(lf.value, keyRows[j].alias);
+        if (d < bestD) { bestD = d; hit = j; }
+      }
+      if (bestD === Infinity) hit = null;
+      else if (bestD > 0) {
+        var chosen = keyRows[hit];
+        for (var q = 0; q < allRows.length; q++) {
+          if (allRows[q] !== chosen && aliasDistance(lf.value, allRows[q].alias) < bestD) { hit = null; break; }
+        }
+      }
+    }
+    var lblOk = hit !== null;
+    rowClaim[k] = lblOk ? hit : null;
+    if (lblOk) claimed.push(hit);
+    lf.classList.remove("right", "wrong");
+    lf.classList.add(lblOk ? "right" : "wrong");
+    var amtOk = lblOk && parseAmt(af.value) === keyRows[hit].amt;
+    af.classList.remove("right", "wrong");
+    af.classList.add(amtOk ? "right" : "wrong");
+    return { right: (lblOk ? 1 : 0) + (amtOk ? 1 : 0), total: 2 };
+  }
+
+  Object.keys(amtFields).forEach(function (k) {
+    miniBtns[k].addEventListener("click", function () {
+      live.apply(miniBtns[k], gradeRow(k));
+      miniBtns[k].classList.add("checked");
+    });
+  });
+
   var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
-  var scoreLbl = h('<div class="topbar-label"></div>');
-  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
 
   checkBtn.addEventListener("click", function () {
-    var right = 0, total = 0;
-    var allRows = built.fieldKeys.map(function (f) { return f.row; });
-    ["ca", "nca", "cl", "ncl", "eq"].forEach(function (sec) {
-      var keyRows = built.fieldKeys.filter(function (f) { return f.sec === sec; }).map(function (f) { return f.row; });
-      var claimed = [];
-      keysIn(sec).forEach(function (k) {
-        total += 2;
-        var lf = lblFields[k], af = amtFields[k];
-        var hit = null;
-        if (isDrop) {
-          for (var i = 0; i < keyRows.length; i++) {
-            if (claimed.indexOf(i) === -1 && lf.value === keyRows[i].label) { hit = i; break; }
-          }
-        } else {
-          // closest unclaimed account in this section wins, and a typo only counts
-          // if it is nearer to that account than to anything else on the statement
-          var bestD = Infinity;
-          for (var j = 0; j < keyRows.length; j++) {
-            if (claimed.indexOf(j) !== -1) continue;
-            var d = aliasDistance(lf.value, keyRows[j].alias);
-            if (d < bestD) { bestD = d; hit = j; }
-          }
-          if (bestD === Infinity) hit = null;
-          else if (bestD > 0) {
-            var chosen = keyRows[hit];
-            for (var q = 0; q < allRows.length; q++) {
-              if (allRows[q] !== chosen && aliasDistance(lf.value, allRows[q].alias) < bestD) { hit = null; break; }
-            }
-          }
-        }
-        var lblOk = hit !== null;
-        if (lblOk) claimed.push(hit);
-        lf.classList.remove("right", "wrong");
-        lf.classList.add(lblOk ? "right" : "wrong");
-        if (lblOk) right++;
-        var amtOk = lblOk && parseAmt(af.value) === keyRows[hit].amt;
-        af.classList.remove("right", "wrong");
-        af.classList.add(amtOk ? "right" : "wrong");
-        if (amtOk) right++;
-      });
+    claimedBySection = { ca: [], nca: [], cl: [], ncl: [], eq: [] };
+    rowClaim = {};
+    Object.keys(amtFields).forEach(function (k) {
+      var unit = miniBtns[k];
+      live.apply(unit, gradeRow(k));
+      unit.classList.add("checked");
     });
-    scoreLbl.textContent = right + " of " + total + " boxes correct";
 
     var order = function (sec) {
       return built.fieldKeys.filter(function (f) { return f.sec === sec; })
@@ -1309,7 +1433,6 @@ function startStatement(mode) {
 
   var newNums = h('<button type="button" class="link-btn">New problem</button>');
   newNums.addEventListener("click", function () { startStatement(mode); });
-  sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
@@ -1387,17 +1510,21 @@ function startIncome(mode) {
     return "<li>" + escapeHtml(f[0]) + ", $" + fmt(f[1]) + "</li>";
   }).join("");
   var ask = "Build the income statement below" + (isDrop ? " using the dropdowns" : ", typing each account name yourself") +
-    ". The figures above are in no particular order. Gross profit, operating income, and net income are subtotals, so they calculate themselves as you type.";
+    ". The figures above are in no particular order. Gross profit, operating income, and net income are subtotals, so they calculate themselves as you type. Check a line as soon as you fill it in, or check everything at once at the bottom.";
   wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
     '<p class="ask" style="margin-top:0;margin-bottom:11px">' + escapeHtml(prob.descr.charAt(0).toUpperCase() + prob.descr.slice(1)) +
     " and " + escapeHtml(prob.profile) + ". For the year ended " + escapeHtml(prob.date) + ", in " + prob.unit + ":</p>" +
     "<ul>" + factList + "</ul><p class=\"ask\">" + ask + "</p></div>"));
 
+  var inRows = IS_ROWS.filter(function (r) { return r.t === "in"; });
+  var live = makeLiveScore(inRows.length * 2);
+  wrap.appendChild(live.el);
+
   var card = h('<div class="exam-card" style="padding-top:0"></div>');
   card.appendChild(h('<div class="stmt-head">' + escapeHtml(prob.company) + "<span>Income Statement</span><span>For the Year Ended " + escapeHtml(prob.date) + "</span></div>"));
   var table = h('<table class="stmt-table"><tbody></tbody></table>');
   var tbody = table.querySelector("tbody");
-  var amtFields = {}, lblFields = {}, calcCells = {};
+  var amtFields = {}, lblFields = {}, calcCells = {}, miniBtns = {};
 
   IS_ROWS.forEach(function (r) {
     var tr = document.createElement("tr");
@@ -1435,6 +1562,9 @@ function startIncome(mode) {
       ai.addEventListener("input", recalc);
       tdA.appendChild(ai);
       amtFields[r.key] = ai;
+      var miniBtn = miniCheckBtn();
+      tdA.appendChild(miniBtn);
+      miniBtns[r.key] = miniBtn;
     } else {
       tdL.textContent = r.text;
       tdA.className = "amt calc-cell";
@@ -1475,26 +1605,33 @@ function startIncome(mode) {
     }
   }
 
-  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
-  var scoreLbl = h('<div class="topbar-label"></div>');
-  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
-  checkBtn.addEventListener("click", function () {
-    var right = 0, total = 0;
-    IS_ROWS.filter(function (r) { return r.t === "in"; }).forEach(function (r) {
-      total += 2;
-      var lf = lblFields[r.key], af = amtFields[r.key];
-      var others = IS_ROWS.filter(function (x) { return x.t === "in" && x !== r; }).map(function (x) { return x.alias; })
-        .concat([["gross profit"], ["operating income"], ["net income"]]);
-      var lblOk = isDrop ? (lf.value === r.label) : matchExclusive(lf.value, r.alias, others);
-      lf.classList.remove("right", "wrong");
-      lf.classList.add(lblOk ? "right" : "wrong");
-      if (lblOk) right++;
-      var amtOk = parseAmt(af.value) === prob.keys[r.key];
-      af.classList.remove("right", "wrong");
-      af.classList.add(amtOk ? "right" : "wrong");
-      if (amtOk) right++;
+  function gradeRow(r) {
+    var lf = lblFields[r.key], af = amtFields[r.key];
+    var others = IS_ROWS.filter(function (x) { return x.t === "in" && x !== r; }).map(function (x) { return x.alias; })
+      .concat([["gross profit"], ["operating income"], ["net income"]]);
+    var lblOk = isDrop ? (lf.value === r.label) : matchExclusive(lf.value, r.alias, others);
+    lf.classList.remove("right", "wrong");
+    lf.classList.add(lblOk ? "right" : "wrong");
+    var amtOk = parseAmt(af.value) === prob.keys[r.key];
+    af.classList.remove("right", "wrong");
+    af.classList.add(amtOk ? "right" : "wrong");
+    return { right: (lblOk ? 1 : 0) + (amtOk ? 1 : 0), total: 2 };
+  }
+
+  inRows.forEach(function (r) {
+    miniBtns[r.key].addEventListener("click", function () {
+      live.apply(miniBtns[r.key], gradeRow(r));
+      miniBtns[r.key].classList.add("checked");
     });
-    scoreLbl.textContent = right + " of " + total + " boxes correct";
+  });
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
+  checkBtn.addEventListener("click", function () {
+    inRows.forEach(function (r) {
+      live.apply(miniBtns[r.key], gradeRow(r));
+      miniBtns[r.key].classList.add("checked");
+    });
     var existing = wrap.querySelector(".review");
     if (existing) existing.remove();
     var key = h('<div class="review" style="margin-top:26px"></div>');
@@ -1510,7 +1647,6 @@ function startIncome(mode) {
   });
   var newNums = h('<button type="button" class="link-btn">New numbers</button>');
   newNums.addEventListener("click", function () { startIncome(mode); });
-  sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
@@ -1594,13 +1730,17 @@ function startCashFlow(mode) {
     ", came through " + escapeHtml(prob.profile) + ". For the year ended " + escapeHtml(prob.date) + ", in " + prob.unit + ":</p>" +
     "<ul>" + factList + "</ul>" +
     '<p class="ask">Build the statement of cash flows below' + (isDrop ? " using the dropdowns" : ", typing each line yourself") +
-    ". The figures above are in no particular order, and amounts in parentheses are cash going out. Net change in cash and ending cash calculate themselves as you type.</p></div>"));
+    ". The figures above are in no particular order, and amounts in parentheses are cash going out. Net change in cash and ending cash calculate themselves as you type. Check a line as soon as you fill it in, or check everything at once at the bottom.</p></div>"));
+
+  var inRows = CF_ROWS.filter(function (r) { return r.t === "in"; });
+  var live = makeLiveScore(inRows.length * 2);
+  wrap.appendChild(live.el);
 
   var card = h('<div class="exam-card" style="padding-top:0"></div>');
   card.appendChild(h('<div class="stmt-head">' + escapeHtml(prob.company) + "<span>Statement of Cash Flows</span><span>For the Year Ended " + escapeHtml(prob.date) + "</span></div>"));
   var table = h('<table class="stmt-table"><tbody></tbody></table>');
   var tbody = table.querySelector("tbody");
-  var amtFields = {}, lblFields = {}, calcCells = {};
+  var amtFields = {}, lblFields = {}, calcCells = {}, miniBtns = {};
 
   CF_ROWS.forEach(function (r) {
     var tr = document.createElement("tr");
@@ -1636,6 +1776,9 @@ function startCashFlow(mode) {
       ai.addEventListener("input", recalc);
       tdA.appendChild(ai);
       amtFields[r.key] = ai;
+      var miniBtn = miniCheckBtn();
+      tdA.appendChild(miniBtn);
+      miniBtns[r.key] = miniBtn;
     } else {
       tdL.textContent = r.text;
       tdA.className = "amt calc-cell";
@@ -1670,26 +1813,33 @@ function startCashFlow(mode) {
     }
   }
 
-  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
-  var scoreLbl = h('<div class="topbar-label"></div>');
-  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
-  checkBtn.addEventListener("click", function () {
-    var right = 0, total = 0;
-    CF_ROWS.filter(function (r) { return r.t === "in"; }).forEach(function (r) {
-      total += 2;
-      var lf = lblFields[r.key], af = amtFields[r.key];
-      var others = CF_ROWS.filter(function (x) { return x.t === "in" && x !== r; }).map(function (x) { return x.alias; })
-        .concat([["net change in cash"], ["cash ending year"]]);
-      var lblOk = isDrop ? (lf.value === r.label) : matchExclusive(lf.value, r.alias, others);
-      lf.classList.remove("right", "wrong");
-      lf.classList.add(lblOk ? "right" : "wrong");
-      if (lblOk) right++;
-      var amtOk = parseAmt(af.value) === prob.keys[r.key];
-      af.classList.remove("right", "wrong");
-      af.classList.add(amtOk ? "right" : "wrong");
-      if (amtOk) right++;
+  function gradeRow(r) {
+    var lf = lblFields[r.key], af = amtFields[r.key];
+    var others = CF_ROWS.filter(function (x) { return x.t === "in" && x !== r; }).map(function (x) { return x.alias; })
+      .concat([["net change in cash"], ["cash ending year"]]);
+    var lblOk = isDrop ? (lf.value === r.label) : matchExclusive(lf.value, r.alias, others);
+    lf.classList.remove("right", "wrong");
+    lf.classList.add(lblOk ? "right" : "wrong");
+    var amtOk = parseAmt(af.value) === prob.keys[r.key];
+    af.classList.remove("right", "wrong");
+    af.classList.add(amtOk ? "right" : "wrong");
+    return { right: (lblOk ? 1 : 0) + (amtOk ? 1 : 0), total: 2 };
+  }
+
+  inRows.forEach(function (r) {
+    miniBtns[r.key].addEventListener("click", function () {
+      live.apply(miniBtns[r.key], gradeRow(r));
+      miniBtns[r.key].classList.add("checked");
     });
-    scoreLbl.textContent = right + " of " + total + " boxes correct";
+  });
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
+  checkBtn.addEventListener("click", function () {
+    inRows.forEach(function (r) {
+      live.apply(miniBtns[r.key], gradeRow(r));
+      miniBtns[r.key].classList.add("checked");
+    });
     var existing = wrap.querySelector(".review");
     if (existing) existing.remove();
     var k = prob.keys;
@@ -1707,7 +1857,6 @@ function startCashFlow(mode) {
   });
   var newNums = h('<button type="button" class="link-btn">New numbers</button>');
   newNums.addEventListener("click", function () { startCashFlow(mode); });
-  sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
@@ -1740,12 +1889,15 @@ function startDrCr(mode) {
   wrap.appendChild(bar);
   wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">Debits and credits</p>' +
     '<p class="intro-text">Debit just means the left side of an account and credit means the right side. Neither one means good or bad, and in every journal entry the two have to be equal. ' +
-    "For each account type below, pick whether an increase and a decrease is recorded as a debit or a credit.</p></div>"));
+    "For each account type below, pick whether an increase and a decrease is recorded as a debit or a credit. Check a row as soon as you answer it, or check everything at once at the bottom.</p></div>"));
+
+  var live = makeLiveScore(10);
+  wrap.appendChild(live.el);
 
   var card = h('<div class="exam-card"></div>');
   var table = h('<table class="drill-table"><thead><tr><th>Account type</th><th>If it increases</th><th>If it decreases</th></tr></thead><tbody></tbody></table>');
   var tbody = table.querySelector("tbody");
-  var cells = [];
+  var units = [];
 
   rows.forEach(function (r) {
     var tr = document.createElement("tr");
@@ -1766,38 +1918,48 @@ function startDrCr(mode) {
     var noteTd = document.createElement("td");
     noteTd.colSpan = 3;
     noteTd.style.paddingTop = "0";
+    var checkWrap = h('<div class="row-check-wrap"></div>');
+    var miniBtn = miniCheckBtn();
+    checkWrap.appendChild(miniBtn);
     var note = h('<p class="row-note" hidden></p>');
+    noteTd.appendChild(checkWrap);
     noteTd.appendChild(note);
     noteTr.appendChild(noteTd);
     tbody.appendChild(tr);
     tbody.appendChild(noteTr);
-    cells.push({ row: r, boxes: made, note: note });
-  });
-  card.appendChild(table);
-  wrap.appendChild(card);
 
-  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
-  var scoreLbl = h('<div class="topbar-label"></div>');
-  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check answers</span></button>');
-  checkBtn.addEventListener("click", function () {
-    var right = 0;
-    cells.forEach(function (c) {
-      var allRight = true;
-      c.boxes.forEach(function (b) {
+    var unit = { row: r, boxes: made, note: note };
+    function grade() {
+      var allRight = true, right = 0;
+      unit.boxes.forEach(function (b) {
         var ok = b.sel.value === b.answer;
         b.sel.classList.remove("right", "wrong");
         b.sel.classList.add(ok ? "right" : "wrong");
         if (ok) right++; else allRight = false;
       });
-      c.note.hidden = false;
-      c.note.className = "row-note" + (allRight ? "" : " wrong");
-      c.note.textContent = (allRight ? "" : "Increase = " + c.row.inc + ", decrease = " + c.row.dec + ". ") + c.row.e;
+      unit.note.hidden = false;
+      unit.note.className = "row-note" + (allRight ? "" : " wrong");
+      unit.note.textContent = (allRight ? "" : "Increase = " + unit.row.inc + ", decrease = " + unit.row.dec + ". ") + unit.row.e;
+      return { right: right, total: unit.boxes.length };
+    }
+    miniBtn.addEventListener("click", function () {
+      live.apply(unit, grade());
+      miniBtn.classList.add("checked");
     });
-    scoreLbl.textContent = right + " of 10 correct";
+    unit.grade = grade;
+    unit.miniBtn = miniBtn;
+    units.push(unit);
+  });
+  card.appendChild(table);
+  wrap.appendChild(card);
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
+  checkBtn.addEventListener("click", function () {
+    units.forEach(function (u) { live.apply(u, u.grade()); u.miniBtn.classList.add("checked"); });
   });
   var reshuffle = h('<button type="button" class="link-btn">Shuffle and retry</button>');
   reshuffle.addEventListener("click", function () { startDrCr(mode); });
-  sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
@@ -1869,12 +2031,15 @@ function startClassify(mode) {
   wrap.appendChild(bar);
   wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">Where does it get reported</p>' +
     '<p class="intro-text">For each item, pick whether it would most likely be reported on the balance sheet (B), the income statement (I), and/or the statement of stockholders\' equity (SE). ' +
-    "Exactly one item on this list is reported on more than one statement, so for that one pick the option naming both. New items every attempt.</p></div>"));
+    "Exactly one item on this list is reported on more than one statement, so for that one pick the option naming both. New items every attempt. Check a row as soon as you answer it, or check everything at once at the bottom.</p></div>"));
+
+  var live = makeLiveScore(items.length);
+  wrap.appendChild(live.el);
 
   var card = h('<div class="exam-card"></div>');
   var table = h('<table class="drill-table"><thead><tr><th>Item</th><th>Statement</th></tr></thead><tbody></tbody></table>');
   var tbody = table.querySelector("tbody");
-  var cells = [];
+  var units = [];
   items.forEach(function (it, i) {
     var tr = document.createElement("tr");
     var td1 = document.createElement("td");
@@ -1885,36 +2050,45 @@ function startClassify(mode) {
     sel.innerHTML = '<option value="">Pick one</option>' + CLASSIFY.options.map(function (o) {
       return '<option value="' + o + '">' + o + "</option>";
     }).join("");
+    var checkWrap = h('<div class="row-check-wrap"></div>');
+    var miniBtn = miniCheckBtn();
+    checkWrap.appendChild(miniBtn);
     var note = h('<p class="row-note" hidden></p>');
     td2.appendChild(sel);
+    td2.appendChild(checkWrap);
     td2.appendChild(note);
     tr.appendChild(td1);
     tr.appendChild(td2);
     tbody.appendChild(tr);
-    cells.push({ sel: sel, note: note, item: it });
+
+    var unit = { sel: sel, note: note, item: it };
+    function grade() {
+      var ok = unit.sel.value === unit.item.ans;
+      unit.sel.classList.remove("right", "wrong");
+      unit.sel.classList.add(ok ? "right" : "wrong");
+      unit.note.hidden = false;
+      unit.note.className = "row-note" + (ok ? "" : " wrong");
+      unit.note.textContent = (ok ? "" : unit.item.ans + ". ") + unit.item.e;
+      return { right: ok ? 1 : 0, total: 1 };
+    }
+    miniBtn.addEventListener("click", function () {
+      live.apply(unit, grade());
+      miniBtn.classList.add("checked");
+    });
+    unit.grade = grade;
+    unit.miniBtn = miniBtn;
+    units.push(unit);
   });
   card.appendChild(table);
   wrap.appendChild(card);
 
   var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
-  var scoreLbl = h('<div class="topbar-label"></div>');
-  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check answers</span></button>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
   checkBtn.addEventListener("click", function () {
-    var right = 0;
-    cells.forEach(function (c) {
-      var ok = c.sel.value === c.item.ans;
-      c.sel.classList.remove("right", "wrong");
-      c.sel.classList.add(ok ? "right" : "wrong");
-      c.note.hidden = false;
-      c.note.className = "row-note" + (ok ? "" : " wrong");
-      c.note.textContent = (ok ? "" : c.item.ans + ". ") + c.item.e;
-      if (ok) right++;
-    });
-    scoreLbl.textContent = right + " of " + cells.length + " correct";
+    units.forEach(function (u) { live.apply(u, u.grade()); u.miniBtn.classList.add("checked"); });
   });
   var again = h('<button type="button" class="link-btn">New items</button>');
   again.addEventListener("click", function () { startClassify(mode); });
-  sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
@@ -2064,9 +2238,8 @@ function startJournal(mode) {
     ", entered into the following transactions. Record each one in the general journal below.</p>" +
     '<ol class="txn-list">' + txns + "</ol>" +
     '<p class="ask">Debit line first, credit line indented underneath' + (isDrop ? " (pick each account from the dropdown)" : " (type each account name yourself)") +
-    ". Put each amount in the correct column and leave the other column blank. Total debits and total credits at the bottom update as you type.</p></div>"));
+    ". Put each amount in the correct column and leave the other column blank. Total debits and total credits at the bottom update as you type. Check an entry as soon as you fill it in, or check everything at once at the bottom.</p></div>"));
 
-  // the dropdown offers the accounts this company actually uses, plus a few wrong turns
   var used = [];
   prob.entries.forEach(function (e) {
     [e.dr.label, e.cr.label].forEach(function (l) { if (used.indexOf(l) === -1) used.push(l); });
@@ -2077,10 +2250,13 @@ function startJournal(mode) {
     [e.dr, e.cr].forEach(function (a) { if (allAliases.indexOf(a.alias) === -1) allAliases.push(a.alias); });
   });
 
+  var live = makeLiveScore(prob.entries.length * 4);
+  wrap.appendChild(live.el);
+
   var card = h('<div class="exam-card" style="padding-top:18px"></div>');
   var table = h('<table class="je-table"><thead><tr><th>Ref</th><th>Description</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead><tbody></tbody></table>');
   var tbody = table.querySelector("tbody");
-  var lines = [];
+  var entryUnits = [];
 
   function acctField() {
     if (isDrop) {
@@ -2109,6 +2285,7 @@ function startJournal(mode) {
   }
 
   prob.entries.forEach(function (e, i) {
+    var drLine = null, crLine = null;
     ["dr", "cr"].forEach(function (side) {
       var tr = document.createElement("tr");
       if (side === "cr") tr.className = "cr-line";
@@ -2129,16 +2306,22 @@ function startJournal(mode) {
       tdCr.appendChild(cIn);
       tr.appendChild(tdRef); tr.appendChild(tdAcct); tr.appendChild(tdDr); tr.appendChild(tdCr);
       tbody.appendChild(tr);
-      lines.push({ entry: e, side: side, acct: af, dr: dIn, cr: cIn });
+      var line = { entry: e, side: side, acct: af, dr: dIn, cr: cIn };
+      if (side === "dr") drLine = line; else crLine = line;
     });
     var memoTr = document.createElement("tr");
     memoTr.className = "memo-row";
     var pad = document.createElement("td");
     var memoTd = document.createElement("td");
-    memoTd.colSpan = 3;
+    memoTd.colSpan = 2;
     memoTd.innerHTML = '<span class="je-memo">' + escapeHtml(e.memo) + "</span>";
-    memoTr.appendChild(pad); memoTr.appendChild(memoTd);
+    var memoCheckTd = document.createElement("td");
+    memoCheckTd.colSpan = 1;
+    var miniBtn = miniCheckBtn();
+    memoCheckTd.appendChild(miniBtn);
+    memoTr.appendChild(pad); memoTr.appendChild(memoTd); memoTr.appendChild(memoCheckTd);
     tbody.appendChild(memoTr);
+    entryUnits.push({ entry: e, dr: drLine, cr: crLine, miniBtn: miniBtn });
   });
   card.appendChild(table);
   var totals = h('<div class="je-totals"><div>Total debits <span id="td-val">0</span></div><div>Total credits <span id="tc-val">0</span></div></div>');
@@ -2150,9 +2333,11 @@ function startJournal(mode) {
   function num(inp) { var v = parseAmt(inp.value); return isNaN(v) ? 0 : v; }
   function recalc() {
     var td = 0, tc = 0, any = false;
-    lines.forEach(function (l) {
-      td += num(l.dr); tc += num(l.cr);
-      if (l.dr.value.trim() !== "" || l.cr.value.trim() !== "") any = true;
+    entryUnits.forEach(function (u) {
+      [u.dr, u.cr].forEach(function (l) {
+        td += num(l.dr); tc += num(l.cr);
+        if (l.dr.value.trim() !== "" || l.cr.value.trim() !== "") any = true;
+      });
     });
     totals.querySelector("#td-val").textContent = fmt(td);
     totals.querySelector("#tc-val").textContent = fmt(tc);
@@ -2167,27 +2352,38 @@ function startJournal(mode) {
     }
   }
 
-  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
-  var scoreLbl = h('<div class="topbar-label"></div>');
-  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
-  checkBtn.addEventListener("click", function () {
-    var right = 0, total = 0;
-    lines.forEach(function (l) {
-      var target = l.side === "dr" ? l.entry.dr : l.entry.cr;
-      total += 2;
-      var others = allAliases.filter(function (a) { return a !== target.alias; });
-      var acctOk = isDrop ? (l.acct.value === target.label) : matchExclusive(l.acct.value, target.alias, others);
-      l.acct.classList.remove("right", "wrong");
-      l.acct.classList.add(acctOk ? "right" : "wrong");
-      if (acctOk) right++;
-      var filled = l.side === "dr" ? l.dr : l.cr;
-      var empty = l.side === "dr" ? l.cr : l.dr;
-      var emptyOk = empty.value.trim() === "" || parseAmt(empty.value) === 0;
-      var amtOk = parseAmt(filled.value) === l.entry.amt && emptyOk;
-      [l.dr, l.cr].forEach(function (f) { f.classList.remove("right", "wrong"); f.classList.add(amtOk ? "right" : "wrong"); });
-      if (amtOk) right++;
+  function gradeLine(l) {
+    var target = l.side === "dr" ? l.entry.dr : l.entry.cr;
+    var others = allAliases.filter(function (a) { return a !== target.alias; });
+    var acctOk = isDrop ? (l.acct.value === target.label) : matchExclusive(l.acct.value, target.alias, others);
+    l.acct.classList.remove("right", "wrong");
+    l.acct.classList.add(acctOk ? "right" : "wrong");
+    var filled = l.side === "dr" ? l.dr : l.cr;
+    var empty = l.side === "dr" ? l.cr : l.dr;
+    var emptyOk = empty.value.trim() === "" || parseAmt(empty.value) === 0;
+    var amtOk = parseAmt(filled.value) === l.entry.amt && emptyOk;
+    [l.dr, l.cr].forEach(function (f) { f.classList.remove("right", "wrong"); f.classList.add(amtOk ? "right" : "wrong"); });
+    return (acctOk ? 1 : 0) + (amtOk ? 1 : 0);
+  }
+  function gradeEntry(u) {
+    var right = gradeLine(u.dr) + gradeLine(u.cr);
+    return { right: right, total: 4 };
+  }
+
+  entryUnits.forEach(function (u) {
+    u.miniBtn.addEventListener("click", function () {
+      live.apply(u.miniBtn, gradeEntry(u));
+      u.miniBtn.classList.add("checked");
     });
-    scoreLbl.textContent = right + " of " + total + " boxes correct";
+  });
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
+  checkBtn.addEventListener("click", function () {
+    entryUnits.forEach(function (u) {
+      live.apply(u.miniBtn, gradeEntry(u));
+      u.miniBtn.classList.add("checked");
+    });
 
     var existing = wrap.querySelector(".review");
     if (existing) existing.remove();
@@ -2205,7 +2401,6 @@ function startJournal(mode) {
   });
   var newNums = h('<button type="button" class="link-btn">New problem</button>');
   newNums.addEventListener("click", function () { startJournal(mode); });
-  sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
@@ -2213,6 +2408,7 @@ function startJournal(mode) {
   wrap.appendChild(nav);
   render(wrap);
 }
+
 
 /* ---------- transactions to journal entries to financial statements ---------- */
 var TX_ACCTS = {
@@ -2431,9 +2627,8 @@ function startTransactions(mode) {
     ", entered into the following transactions during the first year of its operations:</p>" +
     '<ol class="txn-list">' + prob.txns.map(function (t) { return "<li>" + escapeHtml(t) + "</li>"; }).join("") + "</ol>" +
     '<p class="ask">Journalize each transaction, then prepare the income statement and the year-end balance sheet. ' +
-    "Do the income statement before the balance sheet: retained earnings needs net income, and since this is the company's first year, retained earnings starts at zero.</p></div>"));
+    "Do the income statement before the balance sheet: retained earnings needs net income, and since this is the company's first year, retained earnings starts at zero. Check an entry or line as soon as you fill it in, or check everything at the bottom.</p></div>"));
 
-  // every account that appears anywhere in this problem, for the dropdown and for typo checking
   var used = [], allAliases = [];
   prob.entries.forEach(function (e) {
     e.lines.forEach(function (l) {
@@ -2443,11 +2638,14 @@ function startTransactions(mode) {
   var labelPool = used.concat(shuffle(TX_DISTRACTORS).slice(0, 4));
 
   /* ---- step 1: journal ---- */
+  var jeLiveTotal = prob.entries.reduce(function (t, e) { return t + e.lines.length * 2; }, 0);
+  var jeLive = makeLiveScore(jeLiveTotal);
   var jeCard = h('<div class="exam-card" style="padding-top:18px;margin-bottom:26px"></div>');
   jeCard.appendChild(h('<p class="step-label">Step 1: Journalize each transaction <span>Debits first, credits indented. Amount in one column, other column blank.</span></p>'));
+  jeCard.appendChild(jeLive.el);
   var jeTable = h('<table class="je-table"><thead><tr><th>Ref</th><th>Description</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead><tbody></tbody></table>');
   var jeBody = jeTable.querySelector("tbody");
-  var jeLines = [];
+  var entryUnits = [];
 
   function acctField(cls) {
     if (isDrop) {
@@ -2468,6 +2666,7 @@ function startTransactions(mode) {
   }
 
   prob.entries.forEach(function (e, i) {
+    var entryLines = [];
     e.lines.forEach(function (l, li) {
       var tr = document.createElement("tr");
       if (l.s === "cr") tr.className = "cr-line";
@@ -2496,16 +2695,20 @@ function startTransactions(mode) {
       tdCr.appendChild(cIn);
       tr.appendChild(tdRef); tr.appendChild(tdAcct); tr.appendChild(tdDr); tr.appendChild(tdCr);
       jeBody.appendChild(tr);
-      jeLines.push({ entry: i, acct: af, dr: dIn, cr: cIn });
+      entryLines.push({ acct: af, dr: dIn, cr: cIn });
     });
     var memoTr = document.createElement("tr");
     memoTr.className = "memo-row";
     var pad = document.createElement("td");
     var memoTd = document.createElement("td");
-    memoTd.colSpan = 3;
+    memoTd.colSpan = 2;
     memoTd.innerHTML = '<span class="je-memo">' + escapeHtml(e.memo) + "</span>";
-    memoTr.appendChild(pad); memoTr.appendChild(memoTd);
+    var memoCheckTd = document.createElement("td");
+    var miniBtn = miniCheckBtn();
+    memoCheckTd.appendChild(miniBtn);
+    memoTr.appendChild(pad); memoTr.appendChild(memoTd); memoTr.appendChild(memoCheckTd);
     jeBody.appendChild(memoTr);
+    entryUnits.push({ entry: e, lines: entryLines, miniBtn: miniBtn });
   });
   jeCard.appendChild(jeTable);
   var jeTotals = h('<div class="je-totals"><div>Total debits <span id="jtd">0</span></div><div>Total credits <span id="jtc">0</span></div></div>');
@@ -2516,11 +2719,13 @@ function startTransactions(mode) {
 
   function recalcJournal() {
     var td = 0, tc = 0, any = false;
-    jeLines.forEach(function (l) {
-      var d = parseAmt(l.dr.value), c = parseAmt(l.cr.value);
-      if (!isNaN(d)) td += d;
-      if (!isNaN(c)) tc += c;
-      if (l.dr.value.trim() !== "" || l.cr.value.trim() !== "") any = true;
+    entryUnits.forEach(function (u) {
+      u.lines.forEach(function (l) {
+        var d = parseAmt(l.dr.value), c = parseAmt(l.cr.value);
+        if (!isNaN(d)) td += d;
+        if (!isNaN(c)) tc += c;
+        if (l.dr.value.trim() !== "" || l.cr.value.trim() !== "") any = true;
+      });
     });
     jeTotals.querySelector("#jtd").textContent = fmt(td);
     jeTotals.querySelector("#jtc").textContent = fmt(tc);
@@ -2532,9 +2737,52 @@ function startTransactions(mode) {
       : "Debits and credits do not agree: " + fmt(td) + " versus " + fmt(tc) + ", off by " + fmt(Math.abs(td - tc)) + ".";
   }
 
+  function gradeEntry(u) {
+    var e = u.entry;
+    var claimed = [];
+    var right = 0;
+    u.lines.forEach(function (l) {
+      var hit = null, bestD = Infinity;
+      for (var i = 0; i < e.lines.length; i++) {
+        if (claimed.indexOf(i) !== -1) continue;
+        var d = isDrop ? (l.acct.value === e.lines[i].a.label ? 0 : Infinity) : aliasDistance(l.acct.value, e.lines[i].a.alias);
+        if (d < bestD) { bestD = d; hit = i; }
+      }
+      if (bestD === Infinity) hit = null;
+      else if (!isDrop && bestD > 0) {
+        var chosen = e.lines[hit].a;
+        for (var q = 0; q < allAliases.length; q++) {
+          if (allAliases[q] !== chosen.alias && aliasDistance(l.acct.value, allAliases[q]) < bestD) { hit = null; break; }
+        }
+      }
+      var acctOk = hit !== null;
+      if (acctOk) claimed.push(hit);
+      l.acct.classList.remove("right", "wrong");
+      l.acct.classList.add(acctOk ? "right" : "wrong");
+      if (acctOk) right++;
+      var amtOk = false;
+      if (acctOk) {
+        var exp = e.lines[hit];
+        var filledBox = exp.s === "dr" ? l.dr : l.cr;
+        var emptyBox = exp.s === "dr" ? l.cr : l.dr;
+        var emptyOk = emptyBox.value.trim() === "" || parseAmt(emptyBox.value) === 0;
+        amtOk = parseAmt(filledBox.value) === exp.v && emptyOk;
+      }
+      [l.dr, l.cr].forEach(function (f) { f.classList.remove("right", "wrong"); f.classList.add(amtOk ? "right" : "wrong"); });
+      if (amtOk) right++;
+    });
+    return { right: right, total: u.lines.length * 2 };
+  }
+  entryUnits.forEach(function (u) {
+    u.miniBtn.addEventListener("click", function () {
+      jeLive.apply(u.miniBtn, gradeEntry(u));
+      u.miniBtn.classList.add("checked");
+    });
+  });
+
   /* ---- steps 2 and 3: the statements ---- */
   var groups = { rev: prob.is.rev, exp: prob.is.exp, asset: prob.bs.asset, liab: prob.bs.liab, eq: prob.bs.eq };
-  var amtFields = {}, lblFields = {}, calcCells = {}, rowGroup = {};
+  var amtFields = {}, lblFields = {}, calcCells = {}, rowGroup = {}, stmtMiniBtns = {};
 
   function buildTable(rows) {
     var table = h('<table class="stmt-table"><tbody></tbody></table>');
@@ -2564,6 +2812,9 @@ function startTransactions(mode) {
         tdA.appendChild(ai);
         amtFields[r.key] = ai;
         rowGroup[r.key] = r.grp;
+        var miniBtn = miniCheckBtn();
+        tdA.appendChild(miniBtn);
+        stmtMiniBtns[r.key] = miniBtn;
       } else {
         tdL.textContent = r.text;
         tdA.className = "amt calc-cell";
@@ -2590,8 +2841,12 @@ function startTransactions(mode) {
   prob.bs.eq.forEach(function (_, i) { bsRows.push({ t: "in", key: "q" + i, grp: "eq", indent: true }); });
   bsRows.push({ t: "calc", calc: "tle", text: "Total liabilities and stockholders' equity", cls: "grand" });
 
+  var stmtLiveTotal = (isRows.filter(function (r) { return r.t === "in"; }).length + bsRows.filter(function (r) { return r.t === "in"; }).length) * 2;
+  var stmtLive = makeLiveScore(stmtLiveTotal);
+
   var isCard = h('<div class="exam-card" style="padding-top:18px;margin-bottom:26px"></div>');
   isCard.appendChild(h('<p class="step-label">Step 2: Income statement <span>Enter expenses as positive numbers; they get subtracted for you.</span></p>'));
+  isCard.appendChild(stmtLive.el);
   isCard.appendChild(h('<div class="stmt-head">' + escapeHtml(prob.company) + "<span>Income Statement</span><span>For the Year Ended " + escapeHtml(prob.date) + "</span></div>"));
   isCard.appendChild(buildTable(isRows));
   var niNote = h('<p class="tie-note" hidden></p>');
@@ -2637,92 +2892,60 @@ function startTransactions(mode) {
     } else { tieNote.hidden = true; }
   }
 
-  /* ---- grading ---- */
-  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
-  var scoreLbl = h('<div class="score-split"></div>');
-  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
-
-  function matchAccount(typed, target, competitors) {
-    if (isDrop) return typed === target.label;
-    return matchExclusive(typed, target.alias, competitors);
+  var claimedByGroup = { rev: [], exp: [], asset: [], liab: [], eq: [] };
+  var stmtRowClaim = {};
+  function gradeStmtRow(k) {
+    var g = rowGroup[k], pool = groups[g];
+    var claimed = claimedByGroup[g];
+    if (stmtRowClaim[k] !== undefined && stmtRowClaim[k] !== null) {
+      var pos = claimed.indexOf(stmtRowClaim[k]);
+      if (pos !== -1) claimed.splice(pos, 1);
+    }
+    var lf = lblFields[k], af = amtFields[k];
+    var hit = null, bestD = Infinity;
+    for (var i = 0; i < pool.length; i++) {
+      if (claimed.indexOf(i) !== -1) continue;
+      var d = isDrop ? (lf.value === pool[i].a.label ? 0 : Infinity) : aliasDistance(lf.value, pool[i].a.alias);
+      if (d < bestD) { bestD = d; hit = i; }
+    }
+    if (bestD === Infinity) hit = null;
+    else if (!isDrop && bestD > 0) {
+      var chosen = pool[hit].a;
+      for (var q = 0; q < allAliases.length; q++) {
+        if (allAliases[q] !== chosen.alias && aliasDistance(lf.value, allAliases[q]) < bestD) { hit = null; break; }
+      }
+    }
+    var lblOk = hit !== null;
+    stmtRowClaim[k] = lblOk ? hit : null;
+    if (lblOk) claimed.push(hit);
+    lf.classList.remove("right", "wrong");
+    lf.classList.add(lblOk ? "right" : "wrong");
+    var amtOk = lblOk && parseAmt(af.value) === pool[hit].v;
+    af.classList.remove("right", "wrong");
+    af.classList.add(amtOk ? "right" : "wrong");
+    return { right: (lblOk ? 1 : 0) + (amtOk ? 1 : 0), total: 2 };
   }
+  Object.keys(amtFields).forEach(function (k) {
+    stmtMiniBtns[k].addEventListener("click", function () {
+      stmtLive.apply(stmtMiniBtns[k], gradeStmtRow(k));
+      stmtMiniBtns[k].classList.add("checked");
+    });
+  });
 
+  /* ---- big button: checks everything not yet checked, and reveals the key ---- */
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
   checkBtn.addEventListener("click", function () {
-    // step 1: journal, matched as a set within each entry so swapping two debit lines is fine
-    var jRight = 0, jTotal = 0;
-    prob.entries.forEach(function (e, ei) {
-      var rows = jeLines.filter(function (l) { return l.entry === ei; });
-      var claimed = [];
-      rows.forEach(function (l) {
-        jTotal += 2;
-        var hit = null, bestD = Infinity;
-        for (var i = 0; i < e.lines.length; i++) {
-          if (claimed.indexOf(i) !== -1) continue;
-          var d;
-          if (isDrop) d = (l.acct.value === e.lines[i].a.label) ? 0 : Infinity;
-          else d = aliasDistance(l.acct.value, e.lines[i].a.alias);
-          if (d < bestD) { bestD = d; hit = i; }
-        }
-        if (bestD === Infinity) hit = null;
-        else if (!isDrop && bestD > 0) {
-          var chosen = e.lines[hit].a;
-          for (var q = 0; q < allAliases.length; q++) {
-            if (allAliases[q] !== chosen.alias && aliasDistance(l.acct.value, allAliases[q]) < bestD) { hit = null; break; }
-          }
-        }
-        var acctOk = hit !== null;
-        if (acctOk) claimed.push(hit);
-        l.acct.classList.remove("right", "wrong");
-        l.acct.classList.add(acctOk ? "right" : "wrong");
-        if (acctOk) jRight++;
-        var amtOk = false;
-        if (acctOk) {
-          var exp = e.lines[hit];
-          var filledBox = exp.s === "dr" ? l.dr : l.cr;
-          var emptyBox = exp.s === "dr" ? l.cr : l.dr;
-          var emptyOk = emptyBox.value.trim() === "" || parseAmt(emptyBox.value) === 0;
-          amtOk = parseAmt(filledBox.value) === exp.v && emptyOk;
-        }
-        [l.dr, l.cr].forEach(function (f) { f.classList.remove("right", "wrong"); f.classList.add(amtOk ? "right" : "wrong"); });
-        if (amtOk) jRight++;
-      });
+    entryUnits.forEach(function (u) {
+      jeLive.apply(u.miniBtn, gradeEntry(u));
+      u.miniBtn.classList.add("checked");
     });
-
-    // steps 2 and 3: statements, matched as a set within each section
-    var sRight = 0, sTotal = 0;
-    var claimedBy = {};
-    Object.keys(groups).forEach(function (g) { claimedBy[g] = []; });
+    claimedByGroup = { rev: [], exp: [], asset: [], liab: [], eq: [] };
+    stmtRowClaim = {};
     Object.keys(amtFields).forEach(function (k) {
-      var g = rowGroup[k], pool = groups[g];
-      sTotal += 2;
-      var lf = lblFields[k], af = amtFields[k];
-      var hit = null, bestD = Infinity;
-      for (var i = 0; i < pool.length; i++) {
-        if (claimedBy[g].indexOf(i) !== -1) continue;
-        var d;
-        if (isDrop) d = (lf.value === pool[i].a.label) ? 0 : Infinity;
-        else d = aliasDistance(lf.value, pool[i].a.alias);
-        if (d < bestD) { bestD = d; hit = i; }
-      }
-      if (bestD === Infinity) hit = null;
-      else if (!isDrop && bestD > 0) {
-        var chosen = pool[hit].a;
-        for (var q = 0; q < allAliases.length; q++) {
-          if (allAliases[q] !== chosen.alias && aliasDistance(lf.value, allAliases[q]) < bestD) { hit = null; break; }
-        }
-      }
-      var lblOk = hit !== null;
-      if (lblOk) claimedBy[g].push(hit);
-      lf.classList.remove("right", "wrong");
-      lf.classList.add(lblOk ? "right" : "wrong");
-      if (lblOk) sRight++;
-      var amtOk = lblOk && parseAmt(af.value) === pool[hit].v;
-      af.classList.remove("right", "wrong");
-      af.classList.add(amtOk ? "right" : "wrong");
-      if (amtOk) sRight++;
+      stmtLive.apply(stmtMiniBtns[k], gradeStmtRow(k));
+      stmtMiniBtns[k].classList.add("checked");
     });
-
-    scoreLbl.innerHTML = "Journal entries: <strong>" + jRight + " of " + jTotal + "</strong><br>Statements: <strong>" + sRight + " of " + sTotal + "</strong>";
 
     var n = prob.n;
     var existing = wrap.querySelector(".review");
@@ -2748,7 +2971,6 @@ function startTransactions(mode) {
 
   var newNums = h('<button type="button" class="link-btn">New problem</button>');
   newNums.addEventListener("click", function () { startTransactions(mode); });
-  sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
@@ -2799,13 +3021,16 @@ function startEquations(mode) {
   wrap.appendChild(bar);
   wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">The three equations</p>' +
     '<p class="intro-text">Fill in each statement\'s equation. Where two terms are added together, either order counts. ' +
-    "These three sit under every problem on the exam, so it is worth being able to write them from memory.</p></div>"));
+    "These three sit under every problem on the exam, so it is worth being able to write them from memory. Check an equation as soon as you fill it in, or check everything at once at the bottom.</p></div>"));
+
+  var totalSlots = items.reduce(function (t, it) { return t + it.slots.length; }, 0);
+  var live = makeLiveScore(totalSlots);
+  wrap.appendChild(live.el);
 
   var card = h('<div class="exam-card"></div>');
   var blocks = [];
   items.forEach(function (item) {
     var block = h('<div class="eq-block"></div>');
-    // the balance sheet line reads "Assets = ..." so its first slot needs no operator
     block.appendChild(h('<p class="eq-name">' + escapeHtml(item.name) + "</p>"));
     var row = h('<div class="eq-row"></div>');
     var sels = [];
@@ -2820,25 +3045,19 @@ function startEquations(mode) {
       sels.push({ sel: sel, slot: slot });
     });
     block.appendChild(row);
-    var note = h('<p class="row-note" hidden style="margin-top:11px"></p>');
+    var checkWrap = h('<div class="row-check-wrap"></div>');
+    var miniBtn = miniCheckBtn();
+    checkWrap.appendChild(miniBtn);
+    block.appendChild(checkWrap);
+    var note = h('<p class="row-note" hidden style="margin-top:9px"></p>');
     block.appendChild(note);
     card.appendChild(block);
-    blocks.push({ item: item, sels: sels, note: note });
-  });
-  wrap.appendChild(card);
-
-  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
-  var scoreLbl = h('<div class="topbar-label"></div>');
-  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check answers</span></button>');
-  checkBtn.addEventListener("click", function () {
-    var right = 0, total = 0;
-    blocks.forEach(function (b) {
-      // terms joined by a plus sign are interchangeable, so grade those as a set
-      var pairAnswers = b.sels.filter(function (s) { return s.slot.pair; }).map(function (s) { return s.slot.answer; });
+    var unit = { item: item, sels: sels, note: note, miniBtn: miniBtn };
+    function grade() {
+      var pairAnswers = unit.sels.filter(function (s) { return s.slot.pair; }).map(function (s) { return s.slot.answer; });
       var claimed = [];
-      var allRight = true;
-      b.sels.forEach(function (s) {
-        total++;
+      var allRight = true, right = 0;
+      unit.sels.forEach(function (s) {
         var ok;
         if (s.slot.pair) {
           var idx = pairAnswers.indexOf(s.sel.value);
@@ -2851,16 +3070,28 @@ function startEquations(mode) {
         s.sel.classList.add(ok ? "right" : "wrong");
         if (ok) right++; else allRight = false;
       });
-      b.note.hidden = false;
-      b.note.className = "row-note" + (allRight ? "" : " wrong");
-      var correct = b.item.slots.map(function (s, i) { return (i === 0 ? "" : s.op + " ") + s.answer; }).join(" ");
-      b.note.textContent = (allRight ? "" : b.item.name + " = " + correct + ". ") + b.item.e;
+      unit.note.hidden = false;
+      unit.note.className = "row-note" + (allRight ? "" : " wrong");
+      var correct = unit.item.slots.map(function (s, i) { return (i === 0 ? "" : s.op + " ") + s.answer; }).join(" ");
+      unit.note.textContent = (allRight ? "" : unit.item.name + " = " + correct + ". ") + unit.item.e;
+      return { right: right, total: unit.sels.length };
+    }
+    miniBtn.addEventListener("click", function () {
+      live.apply(unit, grade());
+      miniBtn.classList.add("checked");
     });
-    scoreLbl.textContent = right + " of " + total + " correct";
+    unit.grade = grade;
+    blocks.push(unit);
+  });
+  wrap.appendChild(card);
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
+  checkBtn.addEventListener("click", function () {
+    blocks.forEach(function (b) { live.apply(b, b.grade()); b.miniBtn.classList.add("checked"); });
   });
   var again = h('<button type="button" class="link-btn">Shuffle and retry</button>');
   again.addEventListener("click", function () { startEquations(mode); });
-  sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
@@ -2970,7 +3201,7 @@ function startAdjusting(mode) {
     '<p class="ask" style="margin-top:13px;margin-bottom:9px"><strong>Monthly</strong> financial statements are prepared. Using the following information, prepare the adjusting entries necessary on January 31.</p>' +
     '<ol class="txn-list">' + prob.facts.map(function (f) { return "<li>" + escapeHtml(f) + "</li>"; }).join("") + "</ol>" +
     '<p class="ask">Debit line first, credit line indented underneath' + (isDrop ? " (pick each account from the dropdown)" : " (type each account name yourself)") +
-    ". Because the statements are monthly, every adjustment covers one month, not a full year.</p></div>"));
+    ". Because the statements are monthly, every adjustment covers one month, not a full year. Check an entry as soon as you fill it in, or check everything at once at the bottom.</p></div>"));
 
   var used = [], allAliases = [];
   prob.entries.forEach(function (e) {
@@ -2980,10 +3211,13 @@ function startAdjusting(mode) {
   });
   var labelPool = used.concat(ADJ_ALWAYS_DISTRACTORS).concat(shuffle(ADJ_DISTRACTORS).slice(0, 2));
 
+  var live = makeLiveScore(prob.entries.length * 4);
+  wrap.appendChild(live.el);
+
   var card = h('<div class="exam-card" style="padding-top:18px"></div>');
   var table = h('<table class="je-table"><thead><tr><th>Ref</th><th>Account</th><th class="num">Debit</th><th class="num">Credit</th></tr></thead><tbody></tbody></table>');
   var tbody = table.querySelector("tbody");
-  var lines = [];
+  var entryUnits = [];
 
   function acctField() {
     if (isDrop) {
@@ -3004,6 +3238,7 @@ function startAdjusting(mode) {
   }
 
   prob.entries.forEach(function (e, i) {
+    var entryLines = [];
     e.lines.forEach(function (l, li) {
       var tr = document.createElement("tr");
       if (l.s === "cr") tr.className = "cr-line";
@@ -3032,16 +3267,20 @@ function startAdjusting(mode) {
       tdCr.appendChild(cIn);
       tr.appendChild(tdRef); tr.appendChild(tdAcct); tr.appendChild(tdDr); tr.appendChild(tdCr);
       tbody.appendChild(tr);
-      lines.push({ entry: i, acct: af, dr: dIn, cr: cIn });
+      entryLines.push({ acct: af, dr: dIn, cr: cIn });
     });
     var memoTr = document.createElement("tr");
     memoTr.className = "memo-row";
     var pad = document.createElement("td");
     var memoTd = document.createElement("td");
-    memoTd.colSpan = 3;
+    memoTd.colSpan = 2;
     memoTd.innerHTML = '<span class="je-memo">' + escapeHtml(e.memo) + "</span>";
-    memoTr.appendChild(pad); memoTr.appendChild(memoTd);
+    var memoCheckTd = document.createElement("td");
+    var miniBtn = miniCheckBtn();
+    memoCheckTd.appendChild(miniBtn);
+    memoTr.appendChild(pad); memoTr.appendChild(memoTd); memoTr.appendChild(memoCheckTd);
     tbody.appendChild(memoTr);
+    entryUnits.push({ entry: e, lines: entryLines, miniBtn: miniBtn });
   });
   card.appendChild(table);
   var totals = h('<div class="je-totals"><div>Total debits <span id="atd">0</span></div><div>Total credits <span id="atc">0</span></div></div>');
@@ -3052,11 +3291,13 @@ function startAdjusting(mode) {
 
   function recalc() {
     var td = 0, tc = 0, any = false;
-    lines.forEach(function (l) {
-      var d = parseAmt(l.dr.value), c = parseAmt(l.cr.value);
-      if (!isNaN(d)) td += d;
-      if (!isNaN(c)) tc += c;
-      if (l.dr.value.trim() !== "" || l.cr.value.trim() !== "") any = true;
+    entryUnits.forEach(function (u) {
+      u.lines.forEach(function (l) {
+        var d = parseAmt(l.dr.value), c = parseAmt(l.cr.value);
+        if (!isNaN(d)) td += d;
+        if (!isNaN(c)) tc += c;
+        if (l.dr.value.trim() !== "" || l.cr.value.trim() !== "") any = true;
+      });
     });
     totals.querySelector("#atd").textContent = fmt(td);
     totals.querySelector("#atc").textContent = fmt(tc);
@@ -3068,47 +3309,57 @@ function startAdjusting(mode) {
       : "Debits and credits do not agree: " + fmt(td) + " versus " + fmt(tc) + ", off by " + fmt(Math.abs(td - tc)) + ".";
   }
 
-  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
-  var scoreLbl = h('<div class="topbar-label"></div>');
-  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check my work</span></button>');
-  checkBtn.addEventListener("click", function () {
-    var right = 0, total = 0;
-    prob.entries.forEach(function (e, ei) {
-      var rows = lines.filter(function (l) { return l.entry === ei; });
-      var claimed = [];
-      rows.forEach(function (l) {
-        total += 2;
-        var hit = null, bestD = Infinity;
-        for (var i = 0; i < e.lines.length; i++) {
-          if (claimed.indexOf(i) !== -1) continue;
-          var d = isDrop ? (l.acct.value === e.lines[i].a.label ? 0 : Infinity) : aliasDistance(l.acct.value, e.lines[i].a.alias);
-          if (d < bestD) { bestD = d; hit = i; }
+  function gradeEntry(u) {
+    var e = u.entry;
+    var claimed = [];
+    var right = 0;
+    u.lines.forEach(function (l) {
+      var hit = null, bestD = Infinity;
+      for (var i = 0; i < e.lines.length; i++) {
+        if (claimed.indexOf(i) !== -1) continue;
+        var d = isDrop ? (l.acct.value === e.lines[i].a.label ? 0 : Infinity) : aliasDistance(l.acct.value, e.lines[i].a.alias);
+        if (d < bestD) { bestD = d; hit = i; }
+      }
+      if (bestD === Infinity) hit = null;
+      else if (!isDrop && bestD > 0) {
+        var chosen = e.lines[hit].a;
+        for (var q = 0; q < allAliases.length; q++) {
+          if (allAliases[q] !== chosen.alias && aliasDistance(l.acct.value, allAliases[q]) < bestD) { hit = null; break; }
         }
-        if (bestD === Infinity) hit = null;
-        else if (!isDrop && bestD > 0) {
-          var chosen = e.lines[hit].a;
-          for (var q = 0; q < allAliases.length; q++) {
-            if (allAliases[q] !== chosen.alias && aliasDistance(l.acct.value, allAliases[q]) < bestD) { hit = null; break; }
-          }
-        }
-        var acctOk = hit !== null;
-        if (acctOk) claimed.push(hit);
-        l.acct.classList.remove("right", "wrong");
-        l.acct.classList.add(acctOk ? "right" : "wrong");
-        if (acctOk) right++;
-        var amtOk = false;
-        if (acctOk) {
-          var exp = e.lines[hit];
-          var filledBox = exp.s === "dr" ? l.dr : l.cr;
-          var emptyBox = exp.s === "dr" ? l.cr : l.dr;
-          var emptyOk = emptyBox.value.trim() === "" || parseAmt(emptyBox.value) === 0;
-          amtOk = parseAmt(filledBox.value) === exp.v && emptyOk;
-        }
-        [l.dr, l.cr].forEach(function (f) { f.classList.remove("right", "wrong"); f.classList.add(amtOk ? "right" : "wrong"); });
-        if (amtOk) right++;
-      });
+      }
+      var acctOk = hit !== null;
+      if (acctOk) claimed.push(hit);
+      l.acct.classList.remove("right", "wrong");
+      l.acct.classList.add(acctOk ? "right" : "wrong");
+      if (acctOk) right++;
+      var amtOk = false;
+      if (acctOk) {
+        var exp = e.lines[hit];
+        var filledBox = exp.s === "dr" ? l.dr : l.cr;
+        var emptyBox = exp.s === "dr" ? l.cr : l.dr;
+        var emptyOk = emptyBox.value.trim() === "" || parseAmt(emptyBox.value) === 0;
+        amtOk = parseAmt(filledBox.value) === exp.v && emptyOk;
+      }
+      [l.dr, l.cr].forEach(function (f) { f.classList.remove("right", "wrong"); f.classList.add(amtOk ? "right" : "wrong"); });
+      if (amtOk) right++;
     });
-    scoreLbl.textContent = right + " of " + total + " boxes correct";
+    return { right: right, total: u.lines.length * 2 };
+  }
+
+  entryUnits.forEach(function (u) {
+    u.miniBtn.addEventListener("click", function () {
+      live.apply(u.miniBtn, gradeEntry(u));
+      u.miniBtn.classList.add("checked");
+    });
+  });
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
+  checkBtn.addEventListener("click", function () {
+    entryUnits.forEach(function (u) {
+      live.apply(u.miniBtn, gradeEntry(u));
+      u.miniBtn.classList.add("checked");
+    });
 
     var existing = wrap.querySelector(".review");
     if (existing) existing.remove();
@@ -3135,7 +3386,6 @@ function startAdjusting(mode) {
   });
   var newNums = h('<button type="button" class="link-btn">New problem</button>');
   newNums.addEventListener("click", function () { startAdjusting(mode); });
-  sb.appendChild(scoreLbl);
   sb.appendChild(checkBtn);
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
@@ -3143,6 +3393,565 @@ function startAdjusting(mode) {
   wrap.appendChild(nav);
   render(wrap);
 }
+
+/* ---------- chapter 4: net cash flow from operating activities, indirect method ---------- */
+var OCF_ACCOUNTS = {
+  netInc: { label: "Net income", alias: ["net income", "income", "net earnings", "profit"] },
+  netLoss: { label: "Net loss", alias: ["net loss", "loss"] },
+  depr: { label: "Depreciation", alias: ["depreciation", "depreciation expense", "add back depreciation", "add depreciation"] }
+};
+
+// operating assets: a decrease releases cash (add), an increase ties up cash (subtract).
+// Accounts receivable is always included, like the homework; the rest rotate.
+var OCF_ASSET_POOL = [
+  { label: "Accounts Receivable", alias: ["accounts receivable", "receivables", "ar", "accounts receivables"], always: true },
+  { label: "Inventory", alias: ["inventory", "inventories", "merchandise inventory"] },
+  { label: "Prepaid Expenses", alias: ["prepaid expenses", "prepaid expense", "prepaids", "prepaid"] },
+  { label: "Prepaid Insurance", alias: ["prepaid insurance"] },
+  { label: "Supplies", alias: ["supplies", "supplies on hand", "office supplies"] },
+  { label: "Prepaid Rent", alias: ["prepaid rent"] }
+];
+
+// operating liabilities: an increase means cash hasn't gone out yet (add), a decrease means
+// cash caught up with what was owed (subtract). Accounts payable is always included.
+var OCF_LIAB_POOL = [
+  { label: "Accounts Payable", alias: ["accounts payable", "payables", "ap", "accounts payables"], always: true },
+  { label: "Accrued Liabilities", alias: ["accrued liabilities", "accrued liability", "accruals", "accrued expenses"] },
+  { label: "Wages Payable", alias: ["wages payable", "wage payable", "salaries payable"] },
+  { label: "Unearned Revenue", alias: ["unearned revenue", "deferred revenue", "unearned revenues"] },
+  { label: "Income Taxes Payable", alias: ["income taxes payable", "income tax payable", "taxes payable"] }
+];
+
+// Cash is never an adjustment and the dividend is financing, so both are traps
+var OCF_DISTRACTORS = ["Cash", "Dividends paid", "Common stock", "Land", "Sales revenue"];
+
+var OCF_FIRMS = [
+  { n: "Weber Company", d: "" }, { n: "Lindqvist Company", d: "" }, { n: "Barrow Industries", d: "" },
+  { n: "Fairmont Company", d: "" }, { n: "Oakley Supply Company", d: "" }, { n: "Redstone Company", d: "" }
+];
+
+function ocfPickRow(acct, minBeg, maxBeg, minSwing, maxSwing) {
+  var beg = rnd(minBeg, maxBeg, 1) * 400;
+  var end = beg + (Math.random() < 0.5 ? -1 : 1) * rnd(minSwing, maxSwing, 1) * 400;
+  return { a: acct, beg: beg, end: end };
+}
+
+function makeOperatingCF() {
+  var A = OCF_ACCOUNTS, n = {}, tries = 0;
+  var assets = chooseAccounts(OCF_ASSET_POOL);
+  var liabs = chooseAccounts(OCF_LIAB_POOL);
+  var assetRows, liabRows;
+
+  do {
+    n.isLoss = Math.random() < 0.5;
+    n.bottomLine = n.isLoss ? -rnd(6, 40, 1) * 400 : rnd(6, 40, 1) * 400;
+    n.depr = rnd(8, 30, 1) * 240;
+    n.div = rnd(4, 20, 1) * 400;
+    var wantUsed = Math.random() < 0.4;
+
+    assetRows = assets.map(function (acct) { return ocfPickRow(acct, 20, 90, 4, 24); });
+    liabRows = liabs.map(function (acct) { return ocfPickRow(acct, 8, 40, 2, 12); });
+
+    var assetAdjTotal = 0, liabAdjTotal = 0;
+    assetRows.forEach(function (r) { r.adj = r.beg - r.end; assetAdjTotal += r.adj; });
+    liabRows.forEach(function (r) { r.adj = r.end - r.beg; liabAdjTotal += r.adj; });
+
+    n.ocf = n.bottomLine + n.depr + assetAdjTotal + liabAdjTotal;
+    tries++;
+  } while ((n.ocf === 0 || Math.abs(n.ocf) < 600 || (n.ocf < 0) !== wantUsed ||
+            assetRows.some(function (r) { return r.end < 1200; }) ||
+            liabRows.some(function (r) { return r.end < 800; })) && tries < 1200);
+
+  n.cashBeg = Math.max(2000, n.div - n.ocf + rnd(2, 30, 1) * 400);
+  n.cashEnd = n.cashBeg + n.ocf - n.div;
+
+  var firm = pick(OCF_FIRMS);
+  var balances = [["Cash", n.cashEnd, n.cashBeg]];
+  assetRows.forEach(function (r) { balances.push([r.a.label, r.end, r.beg]); });
+  liabRows.forEach(function (r) { balances.push([r.a.label, r.end, r.beg]); });
+
+  return {
+    company: firm.n,
+    n: n,
+    balances: balances,
+    assetRows: assetRows,
+    liabRows: liabRows,
+    keys: {
+      net: [{ a: n.isLoss ? A.netLoss : A.netInc, v: n.bottomLine }],
+      dep: [{ a: A.depr, v: n.depr }],
+      asset: assetRows.map(function (r) { return { a: r.a, v: r.adj }; }),
+      liab: liabRows.map(function (r) { return { a: r.a, v: r.adj }; })
+    }
+  };
+}
+
+function startOperatingCF(mode) {
+  var isDrop = mode.variant === "dropdown";
+  var prob = makeOperatingCF();
+  var n = prob.n;
+  var wrap = document.createElement("div");
+
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">' + (isDrop ? "Dropdown line names" : "Everything blank") + "</div>"));
+  wrap.appendChild(bar);
+
+  var balRows = prob.balances.map(function (b) {
+    return "<tr><td>" + escapeHtml(b[0]) + '</td><td class="num">' + fmt(b[1]) + '</td><td class="num">' + fmt(b[2]) + "</td></tr>";
+  }).join("");
+  wrap.appendChild(h('<div class="stmt-prompt"><h3>' + escapeHtml(prob.company) + "</h3>" +
+    '<p class="ask" style="margin-top:0;margin-bottom:12px">Had a $' + fmt(Math.abs(n.bottomLine)) + " net " + (n.isLoss ? "loss" : "income") +
+    " from operations for the year. Depreciation expense for the year was $" + fmt(n.depr) +
+    " and a cash dividend of $" + fmt(n.div) + " was declared and paid. Balances of the current asset and current liability accounts at the beginning and end of the year follow:</p>" +
+    '<table class="bal-table"><thead><tr><th></th><th class="num">Ending</th><th class="num">Beginning</th></tr></thead><tbody>' +
+    balRows + "</tbody></table>" +
+    '<p class="ask" style="margin-top:13px">Calculate net cash flow from operating activities using the <strong>indirect method</strong>. ' +
+    "Use a negative sign to show that an amount is subtracted. The bottom line adds itself up as you type. Check a line as soon as you fill it in, or check everything at once at the bottom.</p></div>"));
+
+  var used = [], allAliases = [];
+  ["net", "dep", "asset", "liab"].forEach(function (g) {
+    prob.keys[g].forEach(function (k) { used.push(k.a.label); allAliases.push(k.a.alias); });
+  });
+  var other = n.isLoss ? OCF_ACCOUNTS.netInc.label : OCF_ACCOUNTS.netLoss.label;
+  var labelPool = used.concat([other]).concat(shuffle(OCF_DISTRACTORS).slice(0, 3));
+
+  var amtFields = {}, lblFields = {}, rowGroup = {}, calcCell = null, miniBtns = {};
+
+  function acctField() {
+    if (isDrop) {
+      var sel = document.createElement("select");
+      sel.className = "lbl-select";
+      sel.innerHTML = '<option value="">Select line</option>' + shuffle(labelPool).map(function (o) {
+        return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + "</option>";
+      }).join("");
+      return sel;
+    }
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "lbl-input";
+    inp.placeholder = "Line name";
+    inp.autocomplete = "off";
+    inp.spellcheck = false;
+    return inp;
+  }
+
+  var rows = [
+    { t: "in", key: "net", grp: "net" },
+    { t: "note", text: "Add (deduct) items to convert net " + (n.isLoss ? "loss" : "income") + " to cash basis" },
+    { t: "in", key: "dep", grp: "dep", indent: true },
+    { t: "note", text: "Adjust for change in operating assets:", indent: true }
+  ];
+  prob.assetRows.forEach(function (_, i) { rows.push({ t: "in", key: "a" + i, grp: "asset", indent2: true }); });
+  rows.push({ t: "note", text: "Adjust for change in operating liabilities:", indent: true });
+  prob.liabRows.forEach(function (_, i) { rows.push({ t: "in", key: "l" + i, grp: "liab", indent2: true }); });
+  rows.push({ t: "calc", text: "Net cash provided (used) by operating activities", cls: "grand" });
+
+  var inputCount = rows.filter(function (r) { return r.t === "in"; }).length;
+  var live = makeLiveScore(inputCount * 2 + 1);
+  wrap.appendChild(live.el);
+
+  var card = h('<div class="exam-card" style="padding-top:18px"></div>');
+  card.appendChild(h('<p class="step-label">Statement of cash flows, operating section <span>Indirect method</span></p>'));
+  var table = h('<table class="stmt-table"><tbody></tbody></table>');
+  var tbody = table.querySelector("tbody");
+  rows.forEach(function (r) {
+    var tr = document.createElement("tr");
+    var cls = [];
+    if (r.indent) cls.push("indent");
+    if (r.indent2) cls.push("indent2");
+    if (r.cls) cls.push(r.cls);
+    var tdL = document.createElement("td");
+    tdL.className = "lbl";
+    var tdA = document.createElement("td");
+    tdA.className = "amt";
+    if (r.t === "note") {
+      cls.push("note-row");
+      tdL.textContent = r.text;
+    } else if (r.t === "in") {
+      var lf = acctField();
+      tdL.appendChild(lf);
+      lblFields[r.key] = lf;
+      var ai = document.createElement("input");
+      ai.type = "text";
+      ai.className = "amt-input";
+      ai.placeholder = "0";
+      ai.autocomplete = "off";
+      ai.addEventListener("input", recalc);
+      tdA.appendChild(ai);
+      amtFields[r.key] = ai;
+      rowGroup[r.key] = r.grp;
+      var miniBtn = miniCheckBtn();
+      tdA.appendChild(miniBtn);
+      miniBtns[r.key] = miniBtn;
+    } else {
+      tdL.textContent = r.text;
+      tdA.className = "amt calc-cell";
+      tdA.textContent = "\u2014";
+      calcCell = tdA;
+    }
+    tr.className = cls.join(" ");
+    tr.appendChild(tdL);
+    tr.appendChild(tdA);
+    tbody.appendChild(tr);
+  });
+  card.appendChild(table);
+
+  var concl = h('<div class="concl"><span>' + escapeHtml(prob.company) + "'s current year operating activities</span></div>");
+  var conclSel = document.createElement("select");
+  conclSel.innerHTML = '<option value="">select</option><option value="provided">provided</option><option value="used">used</option>';
+  concl.appendChild(conclSel);
+  concl.appendChild(h("<span>cash.</span>"));
+  var conclMini = miniCheckBtn();
+  concl.appendChild(conclMini);
+  card.appendChild(concl);
+  var tieNote = h('<p class="tie-note" hidden></p>');
+  card.appendChild(tieNote);
+  wrap.appendChild(card);
+
+  function val(k) { var v = parseAmt(amtFields[k].value); return isNaN(v) ? 0 : v; }
+  function anyFilled() { return Object.keys(amtFields).some(function (k) { return amtFields[k].value.trim() !== ""; }); }
+
+  function recalc() {
+    var total = Object.keys(amtFields).reduce(function (t, k) { return t + val(k); }, 0);
+    calcCell.textContent = anyFilled() ? fmt(total) : "\u2014";
+    calcCell.classList.remove("tie", "notie");
+    if (anyFilled()) {
+      calcCell.classList.add(total >= 0 ? "tie" : "notie");
+      tieNote.hidden = false;
+      tieNote.className = "tie-note " + (total >= 0 ? "ok" : "bad");
+      tieNote.textContent = total >= 0
+        ? "As entered, operations provided " + fmt(total) + " of cash."
+        : "As entered, operations used " + fmt(Math.abs(total)) + " of cash.";
+    } else { tieNote.hidden = true; }
+  }
+
+  var claimed = {};
+  Object.keys(prob.keys).forEach(function (g) { claimed[g] = []; });
+  var rowClaim = {};
+  function gradeRow(k) {
+    var g = rowGroup[k], pool = prob.keys[g];
+    var c = claimed[g];
+    if (rowClaim[k] !== undefined && rowClaim[k] !== null) {
+      var pos = c.indexOf(rowClaim[k]);
+      if (pos !== -1) c.splice(pos, 1);
+    }
+    var lf = lblFields[k], af = amtFields[k];
+    var hit = null, bestD = Infinity;
+    for (var i = 0; i < pool.length; i++) {
+      if (c.indexOf(i) !== -1) continue;
+      var d = isDrop ? (lf.value === pool[i].a.label ? 0 : Infinity) : aliasDistance(lf.value, pool[i].a.alias);
+      if (d < bestD) { bestD = d; hit = i; }
+    }
+    if (bestD === Infinity) hit = null;
+    else if (!isDrop && bestD > 0) {
+      var chosen = pool[hit].a;
+      for (var q = 0; q < allAliases.length; q++) {
+        if (allAliases[q] !== chosen.alias && aliasDistance(lf.value, allAliases[q]) < bestD) { hit = null; break; }
+      }
+    }
+    var lblOk = hit !== null;
+    rowClaim[k] = lblOk ? hit : null;
+    if (lblOk) c.push(hit);
+    lf.classList.remove("right", "wrong");
+    lf.classList.add(lblOk ? "right" : "wrong");
+    var amtOk = lblOk && parseAmt(af.value) === pool[hit].v;
+    af.classList.remove("right", "wrong");
+    af.classList.add(amtOk ? "right" : "wrong");
+    return { right: (lblOk ? 1 : 0) + (amtOk ? 1 : 0), total: 2 };
+  }
+  function gradeConcl() {
+    var ok = conclSel.value === (n.ocf >= 0 ? "provided" : "used");
+    conclSel.classList.remove("right", "wrong");
+    conclSel.classList.add(ok ? "right" : "wrong");
+    return { right: ok ? 1 : 0, total: 1 };
+  }
+
+  Object.keys(amtFields).forEach(function (k) {
+    miniBtns[k].addEventListener("click", function () {
+      live.apply(miniBtns[k], gradeRow(k));
+      miniBtns[k].classList.add("checked");
+    });
+  });
+  conclMini.addEventListener("click", function () {
+    live.apply(conclMini, gradeConcl());
+    conclMini.classList.add("checked");
+  });
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
+  checkBtn.addEventListener("click", function () {
+    claimed = { net: [], dep: [], asset: [], liab: [] };
+    rowClaim = {};
+    Object.keys(amtFields).forEach(function (k) {
+      live.apply(miniBtns[k], gradeRow(k));
+      miniBtns[k].classList.add("checked");
+    });
+    live.apply(conclMini, gradeConcl());
+    conclMini.classList.add("checked");
+
+    var existing = wrap.querySelector(".review");
+    if (existing) existing.remove();
+    var money = function (v) { return (v < 0 ? "(" : "") + fmt(Math.abs(v)) + (v < 0 ? ")" : ""); };
+    var assetLine = prob.assetRows.map(function (r) { return r.a.label + " " + money(r.adj) + " (" + fmt(r.beg) + " to " + fmt(r.end) + ")"; }).join(", ");
+    var liabLine = prob.liabRows.map(function (r) { return r.a.label + " " + money(r.adj) + " (" + fmt(r.beg) + " to " + fmt(r.end) + ")"; }).join(", ");
+    var key = h('<div class="review" style="margin-top:26px"></div>');
+    key.appendChild(h('<h3 class="review-heading">Answer key</h3>'));
+    key.appendChild(h('<div class="review-item">' +
+      '<p class="review-correct">Net ' + (n.isLoss ? "loss" : "income") + " " + money(n.bottomLine) + ", add back depreciation " + fmt(n.depr) + "</p>" +
+      '<p class="review-correct">' + escapeHtml(assetLine) + "</p>" +
+      '<p class="review-correct">' + escapeHtml(liabLine) + "</p>" +
+      '<p class="review-correct">Net cash ' + (n.ocf >= 0 ? "provided by" : "used by") + " operating activities: " + money(n.ocf) + "</p>" +
+      '<p class="review-explain" style="margin-top:11px"><strong>The signs.</strong> An operating asset that goes down releases cash, so a decrease is added and an increase is subtracted. ' +
+      "An operating liability works the other way: owing more means you have not paid it yet, so an increase is added and a decrease is subtracted. " +
+      "Depreciation is added back because it reduced net income without any cash leaving the company.</p>" +
+      '<p class="review-explain" style="margin-top:9px"><strong>Two things that do not belong here.</strong> The dividend of ' + fmt(n.div) +
+      " is a financing activity, not operating, so it never appears in this section. And the change in Cash itself is never an adjustment: cash is the thing this whole statement is explaining.</p></div>"));
+    wrap.appendChild(key);
+    scrollTop();
+  });
+  var newNums = h('<button type="button" class="link-btn">New problem</button>');
+  newNums.addEventListener("click", function () { startOperatingCF(mode); });
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(newNums);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+
+var DCF_A_POOL = [
+  { exp: "Rent expense", asset: "Prepaid rent", cash: "Cash paid for rent" },
+  { exp: "Insurance expense", asset: "Prepaid insurance", cash: "Cash paid for insurance" },
+  { exp: "Advertising expense", asset: "Prepaid advertising", cash: "Cash paid for advertising" },
+  { exp: "Property tax expense", asset: "Prepaid property taxes", cash: "Cash paid for property taxes" },
+  { exp: "Supplies expense", asset: "Supplies inventory", cash: "Cash paid for supplies purchased" }
+];
+var DCF_B_POOL = [
+  { rev: "Interest income", asset: "Interest receivable", cash: "Cash received as interest" },
+  { rev: "Rent revenue", asset: "Rent receivable", cash: "Cash received as rent" },
+  { rev: "Commission revenue", asset: "Commission receivable", cash: "Cash received as commissions" },
+  { rev: "Service revenue", asset: "Accounts receivable", cash: "Cash received from customers" }
+];
+var DCF_C_CASH_LABELS = ["Cash paid for merchandise purchased", "Cash paid to suppliers", "Cash paid for inventory purchased"];
+
+function makeDirectCF() {
+  var a = pick(DCF_A_POOL), b = pick(DCF_B_POOL), cCash = pick(DCF_C_CASH_LABELS);
+  var A = {}, B = {}, C = {}, tries;
+
+  tries = 0;
+  do {
+    A.exp = rnd(20, 150, 1) * 1000;
+    A.beg = rnd(4, 40, 1) * 1000;
+    A.end = A.beg + (Math.random() < 0.5 ? -1 : 1) * rnd(1, 10, 1) * 1000;
+    A.cash = A.exp + A.end - A.beg;
+    tries++;
+  } while ((A.end < 1000 || A.end === A.beg || A.cash < 1000) && tries < 300);
+
+  tries = 0;
+  do {
+    B.rev = rnd(10, 80, 1) * 1000;
+    B.beg = rnd(2, 20, 1) * 500;
+    B.end = B.beg + (Math.random() < 0.5 ? -1 : 1) * rnd(1, 8, 1) * 500;
+    B.cash = B.rev - B.end + B.beg;
+    tries++;
+  } while ((B.end < 500 || B.end === B.beg || B.cash < 500) && tries < 300);
+
+  tries = 0;
+  do {
+    C.cogs = rnd(60, 260, 1) * 1000;
+    C.invBeg = rnd(15, 45, 1) * 1000;
+    C.invEnd = C.invBeg + (Math.random() < 0.5 ? -1 : 1) * rnd(2, 12, 1) * 1000;
+    C.apBeg = rnd(10, 30, 1) * 1000;
+    C.apEnd = C.apBeg + (Math.random() < 0.5 ? -1 : 1) * rnd(2, 10, 1) * 1000;
+    C.purchases = C.cogs + C.invEnd - C.invBeg;
+    C.cash = C.purchases + C.apBeg - C.apEnd;
+    tries++;
+  } while ((C.invEnd < 1000 || C.invEnd === C.invBeg || C.apEnd < 1000 || C.apEnd === C.apBeg ||
+            C.purchases < 1000 || C.cash < 1000) && tries < 500);
+
+  return { a: a, b: b, cCash: cCash, A: A, B: B, C: C };
+}
+
+function dcfSelect() {
+  var sel = document.createElement("select");
+  sel.innerHTML = '<option value="">select</option><option value="Added to">added to</option><option value="Subtracted from">subtracted from</option>';
+  return sel;
+}
+function dcfSentence(before, sel, after) {
+  var p = document.createElement("p");
+  p.className = "dcf-sentence";
+  p.appendChild(document.createTextNode(before));
+  p.appendChild(sel);
+  p.appendChild(document.createTextNode(after));
+  return p;
+}
+function dcfFacts(rows) {
+  var t = h('<table class="dcf-facts"><tbody></tbody></table>');
+  var tb = t.querySelector("tbody");
+  rows.forEach(function (r) {
+    var tr = document.createElement("tr");
+    var td1 = document.createElement("td");
+    td1.textContent = r[0];
+    var td2 = document.createElement("td");
+    td2.className = "num";
+    td2.textContent = fmt(r[1]);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tb.appendChild(tr);
+  });
+  return t;
+}
+
+function startDirectCF(mode) {
+  var isDrop = mode.variant === "dropdown";
+  var prob = makeDirectCF();
+  var a = prob.a, b = prob.b, A = prob.A, B = prob.B, C = prob.C;
+  var wrap = document.createElement("div");
+
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">' + (isDrop ? "With direction dropdowns" : "Everything blank") + "</div>"));
+  wrap.appendChild(bar);
+
+  wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">Operating cash flows, direct method</p>' +
+    '<p class="intro-text">Calculate the cash flow for each of the following cases. Each one converts an accrual-basis number into the actual cash that moved. Check a case as soon as you answer it, or check everything at once at the bottom.</p></div>'));
+
+  var live = makeLiveScore(isDrop ? 8 : 4);
+  wrap.appendChild(live.el);
+
+  var card = h('<div class="exam-card"></div>');
+  var fields = {};
+
+  function addMini(container, key) {
+    var wrapDiv = h('<div class="row-check-wrap"></div>');
+    var miniBtn = miniCheckBtn();
+    wrapDiv.appendChild(miniBtn);
+    container.appendChild(wrapDiv);
+    return miniBtn;
+  }
+  function gradeUnit(f) {
+    var right = 0, total = 1;
+    if (f.sel) {
+      total++;
+      var dOk = f.sel.value === f.dir;
+      f.sel.classList.remove("right", "wrong");
+      f.sel.classList.add(dOk ? "right" : "wrong");
+      if (dOk) right++;
+    }
+    var aOk = parseAmt(f.amt.value) === f.answer;
+    f.amt.classList.remove("right", "wrong");
+    f.amt.classList.add(aOk ? "right" : "wrong");
+    if (aOk) right++;
+    return { right: right, total: total };
+  }
+
+  // ---- case a ----
+  var caseA = h('<div class="dcf-case"></div>');
+  caseA.appendChild(h('<p class="dcf-title">a. ' + escapeHtml(a.cash) + ":</p>"));
+  caseA.appendChild(dcfFacts([[a.exp, A.exp], [a.asset + ", beginning year", A.beg], [a.asset + ", end of year", A.end]]));
+  var selA = dcfSelect();
+  if (isDrop) caseA.appendChild(dcfSentence("The change in " + a.asset.toLowerCase() + " should be ", selA, " " + a.exp.toLowerCase() + " to find cash paid."));
+  var ansA = h('<div class="dcf-answer"></div>');
+  ansA.appendChild(document.createTextNode(a.cash + ": $"));
+  var inA = document.createElement("input"); inA.type = "text"; inA.className = "amt-input"; inA.autocomplete = "off";
+  ansA.appendChild(inA);
+  caseA.appendChild(ansA);
+  var miniA = addMini(caseA, "A");
+  card.appendChild(caseA);
+  fields.A = { sel: isDrop ? selA : null, amt: inA, answer: A.cash, dir: A.end > A.beg ? "Added to" : "Subtracted from", mini: miniA };
+
+  // ---- case b ----
+  var caseB = h('<div class="dcf-case"></div>');
+  caseB.appendChild(h('<p class="dcf-title">b. ' + escapeHtml(b.cash) + ":</p>"));
+  caseB.appendChild(dcfFacts([[b.rev, B.rev], [b.asset + ", beginning year", B.beg], [b.asset + ", end of year", B.end]]));
+  var selB = dcfSelect();
+  if (isDrop) caseB.appendChild(dcfSentence("The change in " + b.asset.toLowerCase() + " should be ", selB, " " + b.rev.toLowerCase() + " to find cash received."));
+  var ansB = h('<div class="dcf-answer"></div>');
+  ansB.appendChild(document.createTextNode(b.cash + ": $"));
+  var inB = document.createElement("input"); inB.type = "text"; inB.className = "amt-input"; inB.autocomplete = "off";
+  ansB.appendChild(inB);
+  caseB.appendChild(ansB);
+  var miniB = addMini(caseB, "B");
+  card.appendChild(caseB);
+  fields.B = { sel: isDrop ? selB : null, amt: inB, answer: B.cash, dir: B.end > B.beg ? "Subtracted from" : "Added to", mini: miniB };
+
+  // ---- case c ----
+  var caseC = h('<div class="dcf-case"></div>');
+  caseC.appendChild(h('<p class="dcf-title">c. ' + escapeHtml(prob.cCash) + ":</p>"));
+  caseC.appendChild(dcfFacts([
+    ["Cost of goods sold", C.cogs],
+    ["Inventory, beginning year", C.invBeg], ["Inventory, end of year", C.invEnd],
+    ["Accounts payable, beginning year", C.apBeg], ["Accounts payable, end of year", C.apEnd]
+  ]));
+  var selC1 = dcfSelect(), selC2 = dcfSelect();
+  if (isDrop) {
+    caseC.appendChild(dcfSentence("The change in inventory should be ", selC1, " cost of goods sold to find purchases."));
+  }
+  var ansC1 = h('<div class="dcf-answer"></div>');
+  ansC1.appendChild(document.createTextNode("Purchases: $"));
+  var inC1 = document.createElement("input"); inC1.type = "text"; inC1.className = "amt-input"; inC1.autocomplete = "off";
+  ansC1.appendChild(inC1);
+  caseC.appendChild(ansC1);
+  var miniC1 = addMini(caseC, "C1");
+  if (isDrop) {
+    caseC.appendChild(dcfSentence("The change in accounts payable should be ", selC2, " purchases to find cash paid."));
+  }
+  var ansC2 = h('<div class="dcf-answer" style="margin-top:11px"></div>');
+  ansC2.appendChild(document.createTextNode(prob.cCash + ": $"));
+  var inC2 = document.createElement("input"); inC2.type = "text"; inC2.className = "amt-input"; inC2.autocomplete = "off";
+  ansC2.appendChild(inC2);
+  caseC.appendChild(ansC2);
+  var miniC2 = addMini(caseC, "C2");
+  card.appendChild(caseC);
+  fields.C1 = { sel: isDrop ? selC1 : null, amt: inC1, answer: C.purchases, dir: C.invEnd > C.invBeg ? "Added to" : "Subtracted from", mini: miniC1 };
+  fields.C2 = { sel: isDrop ? selC2 : null, amt: inC2, answer: C.cash, dir: C.apEnd > C.apBeg ? "Subtracted from" : "Added to", mini: miniC2 };
+
+  wrap.appendChild(card);
+
+  Object.keys(fields).forEach(function (k) {
+    var f = fields[k];
+    f.mini.addEventListener("click", function () {
+      live.apply(f.mini, gradeUnit(f));
+      f.mini.classList.add("checked");
+    });
+  });
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var checkBtn = h('<button type="button" class="stamp-btn"><span>Check everything</span></button>');
+  checkBtn.addEventListener("click", function () {
+    Object.keys(fields).forEach(function (k) {
+      var f = fields[k];
+      live.apply(f.mini, gradeUnit(f));
+      f.mini.classList.add("checked");
+    });
+
+    var existing = wrap.querySelector(".review");
+    if (existing) existing.remove();
+    var key = h('<div class="review" style="margin-top:26px"></div>');
+    key.appendChild(h('<h3 class="review-heading">Answer key</h3>'));
+    key.appendChild(h('<div class="review-item">' +
+      '<p class="review-correct">a. ' + escapeHtml(a.cash) + ": " + fmt(A.cash) + " (" + fmt(A.exp) + " " + (A.end > A.beg ? "plus" : "minus") + " the " + fmt(Math.abs(A.end - A.beg)) + " change in " + a.asset.toLowerCase() + ")</p>" +
+      '<p class="review-correct">b. ' + escapeHtml(b.cash) + ": " + fmt(B.cash) + " (" + fmt(B.rev) + " " + (B.end > B.beg ? "minus" : "plus") + " the " + fmt(Math.abs(B.end - B.beg)) + " change in " + b.asset.toLowerCase() + ")</p>" +
+      '<p class="review-correct">c. Purchases: ' + fmt(C.purchases) + " (cost of goods sold " + fmt(C.cogs) + " " + (C.invEnd > C.invBeg ? "plus" : "minus") + " the " + fmt(Math.abs(C.invEnd - C.invBeg)) + " change in inventory). " + escapeHtml(prob.cCash) + ": " + fmt(C.cash) + " (purchases " + (C.apEnd > C.apBeg ? "minus" : "plus") + " the " + fmt(Math.abs(C.apEnd - C.apBeg)) + " change in accounts payable)</p>" +
+      '<p class="review-explain" style="margin-top:11px"><strong>Three rules cover every case here.</strong> ' +
+      "An asset tied to an expense, like a prepaid account or inventory: if it increased, the company spent more cash than it expensed, so the increase is added; if it decreased, the opposite, so it's subtracted. " +
+      "An asset tied to a revenue, like a receivable: if it increased, the company earned more than it collected, so the increase is subtracted; if it decreased, it collected more than it earned, so it's added. " +
+      "A liability tied to an expense, like accounts payable: if it increased, the company owes more and hasn't paid yet, so the increase is subtracted; if it decreased, it paid down old debt on top of current purchases, so it's added. " +
+      "Notice the asset and liability rules run in opposite directions, which is the part people usually get backwards.</p></div>"));
+    wrap.appendChild(key);
+    scrollTop();
+  });
+  var newNums = h('<button type="button" class="link-btn">New problem</button>');
+  newNums.addEventListener("click", function () { startDirectCF(mode); });
+  sb.appendChild(checkBtn);
+  wrap.appendChild(sb);
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(newNums);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
 
 showHome();
 })();
