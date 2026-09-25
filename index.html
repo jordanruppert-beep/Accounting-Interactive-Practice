@@ -430,6 +430,46 @@ input, select { font-family: inherit; }
   padding: 8px 13px; margin-bottom: 16px; display: inline-block;
 }
 
+/* formula flashcards */
+.flash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 4px; }
+.flash-card { position: relative; height: 176px; perspective: 1100px; cursor: pointer; }
+.flash-inner {
+  position: relative; width: 100%; height: 100%; transition: transform 0.5s cubic-bezier(.4,.2,.2,1);
+  transform-style: preserve-3d;
+}
+.flash-card.flipped .flash-inner { transform: rotateY(180deg); }
+.flash-face {
+  position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border-radius: var(--radius); border: 1px solid var(--card-border); background: var(--card);
+  box-shadow: var(--shadow-sm); padding: 18px 16px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; gap: 8px; overflow: auto;
+}
+.flash-back { transform: rotateY(180deg); background: #FFFBEE; }
+.flash-name { font-family: 'Spectral', serif; font-weight: 700; font-size: 16.5px; line-height: 1.35; margin: 0; }
+.flash-name.small { font-size: 13px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+.flash-hint { font-size: 11.5px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.06em; margin: 0; }
+.flash-formula { font-size: 14.5px; line-height: 1.5; margin: 0; }
+.flash-frac { display: inline-flex; flex-direction: column; align-items: center; }
+.flash-frac .fnum, .flash-frac .fden { padding: 0 3px; }
+.flash-frac .fbar { width: 100%; height: 1.5px; background: var(--ink); margin: 3px 0; }
+.flash-note { font-size: 12px; color: var(--ink-soft); line-height: 1.48; margin: 0; }
+.flash-btn {
+  border: 1.5px solid var(--card-border); background: #FFFFFF; border-radius: 4px;
+  padding: 9px 17px; font-size: 13.5px; font-weight: 600; cursor: pointer; color: var(--ink-soft);
+  transition: border-color .14s ease, color .14s ease, background .14s ease;
+}
+.flash-btn:hover { border-color: var(--gold); color: var(--ink); }
+.flash-btn.know.checked { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+.flash-btn.miss.checked { border-color: var(--red); background: var(--red-bg); color: var(--red); }
+.flash-type-row { display: flex; align-items: center; gap: 10px; margin-top: 9px; }
+.flash-type-row label { flex: none; width: 92px; font-size: 12.5px; color: var(--ink-soft); text-align: right; }
+.flash-type-row .lbl-input { flex: 1; }
+@media (max-width: 480px) { .flash-type-row label { width: 76px; font-size: 11.5px; } }
+@media (max-width: 640px) {
+  .flash-grid { grid-template-columns: 1fr; }
+  .flash-card { height: 158px; }
+}
+
 /* results */
 .results-card {
   background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
@@ -797,6 +837,8 @@ function makeLiveScore(totalBoxes) {
 }
 
 var MODES = [
+  { id: "flashbrowse", group: "Exam 1 Formula Flashcards", name: "Formula Flashcards", meta: "17 cards, flip and grade yourself", kind: "flashBrowse", tag: "flashcards" },
+  { id: "flashquiz", group: "Exam 1 Formula Flashcards", name: "Formula Flashcards Quiz", meta: "Type each formula, check yourself, review what you miss", kind: "flashQuiz", tag: "flashcards" },
   { id: "ch1mc",  group: "Chapter 1",  name: "Ch. 1 Definitions and Concepts", meta: "42 questions", kind: "quiz", bank: "ch1mc", type: "mc", tag: "multiple choice" },
   { id: "ch1fib", group: "Chapter 1",  name: "Ch. 1 Definitions and Concepts", meta: "38 questions", kind: "quiz", bank: "ch1fib", type: "fib", tag: "fill in the blank" },
   { id: "match",  group: "Chapter 1",  name: "Definition Matching Drill", meta: "10 terms from the homework", kind: "match", tag: "dropdown" },
@@ -866,6 +908,8 @@ function launch(mode) {
   else if (mode.kind === "adj") startAdjusting(mode);
   else if (mode.kind === "ocf") startOperatingCF(mode);
   else if (mode.kind === "dcf") startDirectCF(mode);
+  else if (mode.kind === "flashBrowse") startFlashBrowse(mode);
+  else if (mode.kind === "flashQuiz") startFlashQuiz(mode);
   else if (mode.kind === "classify") startClassify(mode);
   else if (mode.kind === "journal") startJournal(mode);
   else if (mode.kind === "tx") startTransactions(mode);
@@ -3948,6 +3992,263 @@ function startDirectCF(mode) {
   wrap.appendChild(sb);
   var nav = h('<div class="nav-row"></div>');
   nav.appendChild(newNums);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+
+/* ---------- exam 1 formula flashcards ---------- */
+var FORMULA_CARDS = [
+  { name: "Return on Equity", num: "Net income", den: "Average stockholders' equity",
+    numAlias: ["net income", "ni"], denAlias: ["average stockholders equity", "avg stockholders equity", "average stockholders' equity", "average se", "avg se"],
+    note: "The return generated for the owners' invested capital." },
+  { name: "Return on Assets", num: "EWI", den: "Average total assets",
+    numAlias: ["ewi"], denAlias: ["average total assets", "avg total assets", "average assets", "avg assets"],
+    note: "Average total assets is (beginning total assets + ending total assets) \u00f7 2. EWI is net income plus the after-tax cost of interest, so financing decisions don't distort how well assets generate profit." },
+  { name: "Profit Margin", num: "EWI", den: "Sales revenue",
+    numAlias: ["ewi"], denAlias: ["sales revenue", "sales", "revenue", "net sales"],
+    note: "How much of every sales dollar turns into profit, using EWI so the comparison isn't skewed by how the company is financed." },
+  { name: "Gross Profit Margin", num: "Sales revenue \u2212 Cost of goods sold", den: "Sales revenue",
+    numAlias: ["sales revenue minus cost of goods sold", "sales revenue - cost of goods sold", "sales revenue minus cogs", "sales minus cogs", "sales - cogs", "net sales minus cogs", "revenue minus cogs"],
+    denAlias: ["sales revenue", "sales", "net sales", "revenue"],
+    note: "The percentage of each sales dollar left after covering the direct cost of the product." },
+  { name: "Accounts Receivable Turnover", num: "Sales revenue", den: "Average accounts receivable",
+    numAlias: ["sales revenue", "sales", "net sales", "revenue"], denAlias: ["average accounts receivable", "avg accounts receivable", "average ar", "avg ar"],
+    note: "How many times per year the company collects its average receivables balance." },
+  { name: "Inventory Turnover", num: "Cost of goods sold", den: "Average inventory",
+    numAlias: ["cost of goods sold", "cogs"], denAlias: ["average inventory", "avg inventory"],
+    note: "How many times per year the company sells through its average inventory." },
+  { name: "PP&E Turnover", num: "Sales revenue", den: "Average PP&E",
+    numAlias: ["sales revenue", "sales", "net sales", "revenue"], denAlias: ["average ppe", "avg ppe", "average pp&e", "average pp and e", "average property plant and equipment", "avg property plant and equipment"],
+    note: "How much sales revenue each dollar of property, plant, and equipment generates." },
+  { name: "Asset Turnover Rate", num: "Sales revenue", den: "Average total assets",
+    numAlias: ["sales revenue", "sales", "net sales", "revenue"], denAlias: ["average total assets", "avg total assets", "average assets", "avg assets"],
+    note: "How much sales revenue the company generates for every dollar invested in assets overall." },
+  { name: "Current Ratio", num: "Current assets", den: "Current liabilities",
+    numAlias: ["current assets"], denAlias: ["current liabilities"],
+    note: "A broad measure of whether current assets can cover current liabilities." },
+  { name: "Quick Ratio", num: "Cash + short-term investments + Accounts receivable", den: "Current liabilities",
+    numAlias: ["cash plus short term investments plus accounts receivable", "cash + short term investments + accounts receivable", "cash short term investments and accounts receivable", "cash marketable securities and accounts receivable", "cash plus short term investments plus ar", "cash + marketable securities + ar"],
+    denAlias: ["current liabilities"],
+    note: "Like the current ratio, but keeps only the assets that convert to cash fastest, leaving out inventory and prepaids." },
+  { name: "Working Capital", flat: "Current assets \u2212 Current liabilities",
+    flatAlias: ["current assets minus current liabilities", "current assets - current liabilities", "ca minus cl", "current assets minus current liability"],
+    note: "The dollar cushion of current assets left over after covering current liabilities." },
+  { name: "Debt-to-Equity", num: "Total liabilities", den: "Stockholders' equity",
+    numAlias: ["total liabilities"], denAlias: ["stockholders equity", "stockholders' equity", "average stockholders equity", "se"],
+    note: "How much the company relies on debt versus owner financing." },
+  { name: "Times Interest Earned", num: "Net income + Tax expense + Interest expense", den: "Interest expense",
+    numAlias: ["net income plus tax expense plus interest expense", "net income + tax expense + interest expense", "ni plus tax plus interest", "net income tax expense and interest expense", "net income plus tax exp plus interest exp"],
+    denAlias: ["interest expense"],
+    note: "How many times over the company could pay its interest expense from earnings before tax and interest." },
+  { name: "Operating Cash Flow to Current Liabilities", num: "Cash from operations", den: "Average current liabilities",
+    numAlias: ["cash from operations", "operating cash flow", "cash flow from operations", "net cash from operations"],
+    denAlias: ["average current liabilities", "avg current liabilities"],
+    note: "Measures how well operating cash flow covers short-term obligations; near or above 1 is healthy." },
+  { name: "EWI", flat: "Net income + [Interest expense \u00d7 (1 \u2212 Tax rate)]",
+    flatAlias: ["net income plus interest expense times 1 minus tax rate", "net income plus interest expense times one minus the tax rate", "net income plus interest expense x 1 minus tax rate", "net income plus after tax interest expense", "ni plus interest expense times 1 minus tax rate"],
+    note: "Adds back the after-tax cost of interest. Used inside Return on Assets so financing decisions don't distort how well assets generate profit." },
+  { name: "Expense to Sales", num: "Individual expense item", den: "Sales revenue",
+    numAlias: ["individual expense item", "specific expense", "expense item", "individual expense"], denAlias: ["sales revenue", "sales", "net sales", "revenue"],
+    note: "Shows what percentage of every sales dollar a specific expense consumes." },
+  { name: "Cash Burn Rate", num: "Free cash flow in the period", den: "Number of days in the period",
+    numAlias: ["free cash flow in the period", "free cash flow"], denAlias: ["number of days in the period", "days in the period", "number of days"],
+    note: "Estimates the average daily cash inflow or outflow; a negative number shows how fast cash reserves are being used up." }
+];
+
+FORMULA_CARDS.forEach(function (c) {
+  if (c.flat) c.flatAlias = (c.flatAlias || []).concat([c.flat]);
+  else { c.numAlias = (c.numAlias || []).concat([c.num]); c.denAlias = (c.denAlias || []).concat([c.den]); }
+});
+
+function flashFrac(numText, denText) {
+  return '<span class="flash-frac"><span class="fnum">' + escapeHtml(numText) + '</span><span class="fbar"></span><span class="fden">' + escapeHtml(denText) + "</span></span>";
+}
+function flashFormulaHtml(card) {
+  return card.flat
+    ? '<p class="flash-formula">' + escapeHtml(card.flat) + "</p>"
+    : '<p class="flash-formula">' + flashFrac(card.num, card.den) + "</p>";
+}
+function buildFlashCard(cardData, allowManualFlip) {
+  var outer = h('<div class="flash-card"></div>');
+  var inner = h('<div class="flash-inner"></div>');
+  var front = h('<div class="flash-face flash-front"><p class="flash-name">' + escapeHtml(cardData.name) + '</p><p class="flash-hint">Tap to flip</p></div>');
+  var back = document.createElement("div");
+  back.className = "flash-face flash-back";
+  back.innerHTML = '<p class="flash-name small">' + escapeHtml(cardData.name) + "</p>" +
+    flashFormulaHtml(cardData) + '<p class="flash-note">' + escapeHtml(cardData.note) + "</p>";
+  inner.appendChild(front);
+  inner.appendChild(back);
+  outer.appendChild(inner);
+  if (allowManualFlip !== false) {
+    outer.addEventListener("click", function () { outer.classList.toggle("flipped"); });
+  }
+  return outer;
+}
+
+function startFlashBrowse(mode, cardList) {
+  var cards = shuffle(cardList || FORMULA_CARDS);
+  var wrap = document.createElement("div");
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">' + cards.length + " cards</div>"));
+  wrap.appendChild(bar);
+  wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">Study these before the exam</p>' +
+    '<p class="intro-text">Tap any card to flip it and see the formula. Then grade yourself honestly: mark it "I know it" or "Don\'t know." ' +
+    "Scroll through all of them in any order, and review whatever you marked \"Don't know\" at the bottom.</p></div>"));
+
+  var live = makeLiveScore(cards.length);
+  wrap.appendChild(live.el);
+
+  var missed = [];
+  var reviewBtn = h('<button type="button" class="link-btn" disabled>Review the ones I don\'t know</button>');
+
+  var grid = h('<div class="flash-grid"></div>');
+  cards.forEach(function (cardData) {
+    var cell = h('<div></div>');
+    var flash = buildFlashCard(cardData);
+    cell.appendChild(flash);
+    var btnRow = h('<div class="row-check-wrap" style="margin-top:12px;justify-content:center" hidden></div>');
+    var knowBtn = h('<button type="button" class="flash-btn know">I know it</button>');
+    var missBtn = h('<button type="button" class="flash-btn miss">Don\'t know</button>');
+    btnRow.appendChild(knowBtn);
+    btnRow.appendChild(missBtn);
+    cell.appendChild(btnRow);
+
+    flash.addEventListener("click", function () {
+      if (flash.classList.contains("flipped")) btnRow.hidden = false;
+    });
+
+    var unit = {};
+    function grade(knew) {
+      knowBtn.classList.toggle("checked", knew);
+      missBtn.classList.toggle("checked", !knew);
+      var idx = missed.indexOf(cardData);
+      if (!knew && idx === -1) missed.push(cardData);
+      if (knew && idx !== -1) missed.splice(idx, 1);
+      reviewBtn.disabled = missed.length === 0;
+      return { right: knew ? 1 : 0, total: 1 };
+    }
+    knowBtn.addEventListener("click", function () { live.apply(unit, grade(true)); });
+    missBtn.addEventListener("click", function () { live.apply(unit, grade(false)); });
+    grid.appendChild(cell);
+  });
+  wrap.appendChild(grid);
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var again = h('<button type="button" class="stamp-btn"><span>Shuffle and start over</span></button>');
+  again.addEventListener("click", function () { startFlashBrowse(mode); });
+  sb.appendChild(again);
+  wrap.appendChild(sb);
+  reviewBtn.addEventListener("click", function () {
+    if (missed.length) startFlashBrowse(mode, missed.slice());
+  });
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(reviewBtn);
+  wrap.appendChild(nav);
+  render(wrap);
+}
+
+function gradeTypedCard(cardData, inputs) {
+  if (cardData.flat) {
+    var ok = matchText(inputs[0].value, cardData.flatAlias);
+    inputs[0].classList.remove("right", "wrong");
+    inputs[0].classList.add(ok ? "right" : "wrong");
+    return { right: ok ? 1 : 0, total: 1 };
+  }
+  var okNum = matchText(inputs[0].value, cardData.numAlias);
+  var okDen = matchText(inputs[1].value, cardData.denAlias);
+  inputs[0].classList.remove("right", "wrong");
+  inputs[0].classList.add(okNum ? "right" : "wrong");
+  inputs[1].classList.remove("right", "wrong");
+  inputs[1].classList.add(okDen ? "right" : "wrong");
+  return { right: (okNum ? 1 : 0) + (okDen ? 1 : 0), total: 2 };
+}
+
+
+function startFlashQuiz(mode, cardList) {
+  var cards = shuffle(cardList || FORMULA_CARDS);
+  var wrap = document.createElement("div");
+  var bar = h('<div class="topbar"></div>');
+  bar.appendChild(homeLink());
+  bar.appendChild(h('<div class="topbar-label">' + cards.length + " cards</div>"));
+  wrap.appendChild(bar);
+  wrap.appendChild(h('<div class="intro-card"><p class="intro-kicker">Type it, then check yourself</p>' +
+    '<p class="intro-text">Type the numerator and denominator (or the whole formula for the two that are not fractions), then hit Check. ' +
+    "Wording does not have to match exactly, common phrasings and abbreviations are accepted. Checking also flips the card so you see the correct formula either way.</p></div>"));
+
+  var totalBoxes = cards.reduce(function (t, c) { return t + (c.flat ? 1 : 2); }, 0);
+  var live = makeLiveScore(totalBoxes);
+  wrap.appendChild(live.el);
+
+  var missed = [];
+  var reviewBtn = h('<button type="button" class="link-btn" disabled>Review the ones I missed</button>');
+
+  cards.forEach(function (cardData) {
+    var qCard = h('<div class="exam-card q-card"></div>');
+    var flash = buildFlashCard(cardData, false);
+    qCard.appendChild(flash);
+
+    var inputsWrap = h('<div class="flash-type-wrap" style="margin-top:14px"></div>');
+    var inputs = [];
+    if (cardData.flat) {
+      var row = h('<div class="flash-type-row"><label>Formula</label></div>');
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.className = "lbl-input"; inp.autocomplete = "off"; inp.spellcheck = false;
+      inp.placeholder = "Type the whole formula";
+      row.appendChild(inp);
+      inputsWrap.appendChild(row);
+      inputs.push(inp);
+    } else {
+      var row1 = h('<div class="flash-type-row"><label>Numerator</label></div>');
+      var inp1 = document.createElement("input");
+      inp1.type = "text"; inp1.className = "lbl-input"; inp1.autocomplete = "off"; inp1.spellcheck = false;
+      row1.appendChild(inp1);
+      inputsWrap.appendChild(row1);
+      inputs.push(inp1);
+      var row2 = h('<div class="flash-type-row"><label>Denominator</label></div>');
+      var inp2 = document.createElement("input");
+      inp2.type = "text"; inp2.className = "lbl-input"; inp2.autocomplete = "off"; inp2.spellcheck = false;
+      row2.appendChild(inp2);
+      inputsWrap.appendChild(row2);
+      inputs.push(inp2);
+    }
+    qCard.appendChild(inputsWrap);
+
+    var checkWrap = h('<div class="row-check-wrap" style="margin-top:12px"></div>');
+    var checkBtn = miniCheckBtn();
+    checkWrap.appendChild(checkBtn);
+    qCard.appendChild(checkWrap);
+
+    var unit = {};
+    function doCheck() {
+      var res = gradeTypedCard(cardData, inputs);
+      live.apply(unit, res);
+      checkBtn.classList.add("checked");
+      flash.classList.add("flipped");
+      var idx = missed.indexOf(cardData);
+      var allRight = res.right === res.total;
+      if (!allRight && idx === -1) missed.push(cardData);
+      if (allRight && idx !== -1) missed.splice(idx, 1);
+      reviewBtn.disabled = missed.length === 0;
+    }
+    checkBtn.addEventListener("click", doCheck);
+    inputs[inputs.length - 1].addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); doCheck(); }
+    });
+    wrap.appendChild(qCard);
+  });
+
+  var sb = h('<div class="start-bar" style="margin-top:26px"></div>');
+  var again = h('<button type="button" class="stamp-btn"><span>Shuffle and start over</span></button>');
+  again.addEventListener("click", function () { startFlashQuiz(mode); });
+  sb.appendChild(again);
+  wrap.appendChild(sb);
+  reviewBtn.addEventListener("click", function () {
+    if (missed.length) startFlashQuiz(mode, missed.slice());
+  });
+  var nav = h('<div class="nav-row"></div>');
+  nav.appendChild(reviewBtn);
   wrap.appendChild(nav);
   render(wrap);
 }
